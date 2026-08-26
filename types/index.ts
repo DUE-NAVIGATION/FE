@@ -1,8 +1,13 @@
 /**
  * DUE — BE ↔ FE API 계약 타입
  *
- * ★ 이 파일은 백엔드 `BE/src/main/java/com/due/domain/*` 의 거울이다.
- *   Java 쪽 record 를 고치면 여기도 같이 고친다. 한쪽만 고치면 런타임에 깨진다.
+ * ★ 이 파일은 백엔드(Go) `be/internal/model/*` 의 거울이다.
+ *   Go 쪽 struct 를 고치면 여기도 같이 고친다. 한쪽만 고치면 런타임에 깨진다.
+ *
+ *   대응표
+ *     UserContext     ← model/context.go
+ *     Condition·Program ← model/program.go
+ *     ConditionResult·MatchResult·MatchSummary ← model/result.go
  *
  * 원칙 (CLAUDE.md 참조)
  *  - 판정은 백엔드 규칙 엔진이 한다. 프론트는 결과를 그리기만 한다.
@@ -162,10 +167,15 @@ export interface ApplyInfo {
 export interface SourceInfo {
   /** 공식 안내 페이지 URL */
   url: string;
-  /** 개정일 (YYYY-MM-DD). 심사에서 물어본다 — 반드시 기입 */
-  revised_at: string;
+  /**
+   * 개정일 (YYYY-MM-DD). 심사에서 물어본다 — 반드시 기입.
+   * ★ 필드명은 camelCase 다. 제도 JSON 에 `revised_at` 으로 쓰면 백엔드가 읽지 못한다
+   */
+  revisedAt: string;
   /** 출처 기관명 */
   agency?: string;
+  /** 작성자 메모 (근거 문서, 대조 필요 사항 등) */
+  note?: string;
 }
 
 /** 제도 정의 */
@@ -210,21 +220,35 @@ export interface MatchResult {
   status: MatchStatus;
   /** 조건 단위 근거. 설명 가능성의 핵심 — 항상 채운다 */
   conditions: ConditionResult[];
-  /** 연간 예상 수령액 (원). 산정 불가면 undefined */
-  estimatedAmount?: number;
-  /** 판정에 더 필요한 필드 목록 */
+  /** 연간 예상 수령액 (원). 산정 불가면 0 */
+  estimatedAmount: number;
+  /** 판정에 더 필요한 필드 목록. 없으면 빈 배열 */
   missingFields: UserContextField[];
 }
 
-/** 전체 판정 결과 (화면 상단 요약의 원본) */
+/**
+ * 결과 화면 상단의 요약. 백엔드 `model.Summary` 와 1:1.
+ * "확인된 것 6건 · 연 4,800,000원 · 추가 확인 3건"
+ *
+ * ★ 제도 목록은 여기 들어 있지 않다. `EvaluateResponse.results` 를 상태별로
+ *   그룹핑해서 그린다 — 판정도 분류도 백엔드가 이미 끝냈다.
+ */
 export interface MatchSummary {
-  eligible: MatchResult[];
-  needsInfo: MatchResult[];
-  ineligible: MatchResult[];
-  /** eligible 합산 연간 예상액 (원) */
-  totalYearlyAmount: number;
+  eligibleCount: number;
+  needsInfoCount: number;
+  ineligibleCount: number;
+  /** ELIGIBLE 합산 연간 예상액 (원) */
+  totalAnnualAmount: number;
   /** 중복수급 배제로 제거된 제도 id */
   excludedByConflict?: string[];
+}
+
+/** POST /api/evaluate 의 응답 */
+export interface EvaluateResponse {
+  results: MatchResult[];
+  summary: MatchSummary;
+  /** "실제 수급 여부는 관할 기관의 심사로 결정됩니다" — 화면에서 지우지 않는다 */
+  disclaimer: string;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -253,8 +277,21 @@ export interface MedianIncomeTable {
   /** 기준연도 */
   year: number;
   source: SourceInfo;
-  /** 가구원수 → 월 기준중위소득 (원) */
+  /** 가구원수 → 월 기준중위소득 (원). 키는 문자열이다 */
   byHouseholdSize: Record<string, number>;
+  /** 표에 없는 큰 가구는 1인 증가시마다 이 금액을 더한다 */
+  extraPerPerson: number;
+  /** 재산의 소득환산 파라미터. 확인되지 않았으면 null */
+  propertyConversion: PropertyConversion | null;
+}
+
+/** 재산 → 월 소득 환산 파라미터 */
+export interface PropertyConversion {
+  /** 기본재산액 (원). 이 금액까지는 환산하지 않는다 */
+  basicDeduction: number;
+  /** 월 소득환산율 (%) */
+  monthlyRatePct: number;
+  source: SourceInfo;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -263,7 +300,7 @@ export interface MedianIncomeTable {
 
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
-/** 자연어 → UserContext 추출 결과. 백엔드 com.due.ai.ExtractionResult 와 대응 */
+/** 자연어 → UserContext 추출 결과. 백엔드 internal/ai 의 ExtractionResult 와 대응 */
 export interface ExtractionResult {
   extracted: UserContext;
   confidence: Partial<Record<UserContextField, Confidence>>;

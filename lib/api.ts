@@ -1,5 +1,5 @@
 /**
- * 백엔드(Spring Boot) 호출 클라이언트.
+ * 백엔드(Go · net/http) 호출 클라이언트.
  *
  * ★ AI 키는 프론트에 두지 않는다. LLM 호출은 전부 백엔드가 한다.
  * ★ 응답을 캐시·저장하지 않는다. 화면이 살아 있는 동안만 메모리에 둔다.
@@ -61,5 +61,10 @@ export interface HealthResponse {
   storesUserData: boolean;
 }
 
-/** 연결 확인용. Phase 1 부터 실제 판정 API 가 여기에 붙는다 */
-export const getHealth = () => api.get<HealthResponse>('/api/health');
+/**
+ * 연결 확인용. Phase 5 에서 실제 판정 API 가 여기에 붙는다.
+ *
+ * ★ 경로는 `/healthz` 다. 다른 엔드포인트와 달리 `/api` 접두어가 없다
+ *   (BE 의 API 계약 참조). 임의로 `/api/health` 로 바꾸면 연결이 깨진다.
+ */
+export const getHealth = () => api.get<HealthResponse>('/healthz');

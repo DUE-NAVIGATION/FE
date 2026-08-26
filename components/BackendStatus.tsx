@@ -35,7 +35,7 @@ export default function BackendStatus() {
     <div className="text-unknown">
       <p>⚠ 백엔드에 연결할 수 없습니다 — {state.message}</p>
       <p className="mt-1 text-sm text-muted">
-        <code>BE</code> 디렉터리에서 <code>./mvnw spring-boot:run</code> 을
+        <code>be</code> 디렉터리에서 <code>go run ./cmd/server</code> 를
         실행하세요.
       </p>
     </div>

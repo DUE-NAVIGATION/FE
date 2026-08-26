@@ -42,13 +42,15 @@ Next.js (App Router) · TypeScript · Tailwind v4 · Zustand(세션 한정) · V
 /app          라우트
 /components   UI
 /lib          api.ts — 백엔드 호출 클라이언트
-/types        index.ts — 백엔드 com.due.domain 의 거울
+/types        index.ts — 백엔드 internal/model 의 거울
 ```
 
 ## 규칙
 
-- `types/index.ts`는 백엔드 `com.due.domain/*`의 **거울**이다.
+- `types/index.ts`는 백엔드(Go) `internal/model/*`의 **거울**이다.
   한쪽만 고치면 런타임에 깨진다. 반드시 같이 고친다
+  - 필드명은 camelCase, enum 값은 UPPER_SNAKE 로 통일한다 (`ELIGIBLE`, `HIGH`)
+  - 연산자(`between` `lte` …)만 예외적으로 소문자다. 제도 JSON 을 사람이 쓰기 때문
 - 백엔드 호출은 `lib/api.ts`를 거친다. 타임아웃 8초, 실패 시 수동 입력 폼으로 폴백
 - 제도명·금액을 하드코딩하지 않는다. 전부 백엔드 응답에서 온다
 

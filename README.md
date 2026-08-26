@@ -15,7 +15,13 @@ cp .env.example .env.local     # NEXT_PUBLIC_API_BASE_URL 확인
 npm run dev                    # http://localhost:3000
 ```
 
-백엔드가 `http://localhost:8080`에 떠 있어야 첫 화면에 **"✅ 백엔드 연결됨"**이 표시된다.
+백엔드(Go)가 `http://localhost:8080`에 떠 있어야 첫 화면에 **"✅ 백엔드 연결됨"**이 표시된다.
+
+```bash
+cd ../be && cp .env.example .env && go run ./cmd/server
+```
+
+`.env` 의 `CORS_ALLOWED_ORIGINS` 에 `http://localhost:3000` 이 들어 있어야 브라우저가 응답을 읽을 수 있다.
 
 | 명령어              | 설명            |
 | ------------------- | --------------- |
@@ -31,7 +37,7 @@ npm run dev                    # http://localhost:3000
 /app          라우트
 /components   UI (Disclaimer, BackendStatus …)
 /lib          api.ts — 백엔드 호출 클라이언트 (타임아웃 8초, 폴백)
-/types        index.ts — 백엔드 com.due.domain 의 거울
+/types        index.ts — 백엔드(Go) internal/model 의 거울
 ```
 
 ## 이 저장소의 규칙 (요약)

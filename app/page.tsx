@@ -7,10 +7,10 @@ import BackendStatus from '@/components/BackendStatus';
 
 const phases = [
   { name: 'Phase 0 — 셋업 + 타입 정의 (BE/FE 분리)', owner: '공통', done: true },
-  { name: 'Phase 1 — 규칙 엔진 com.due.rules', owner: 'BE', done: false },
+  { name: 'Phase 1 — 규칙 엔진 internal/rules', owner: 'BE', done: true },
   { name: 'Phase 2 — 소득 계산 + 중복수급', owner: 'BE', done: false },
-  { name: 'Phase 3 — 제도 데이터 resources/programs', owner: '데이터', done: false },
-  { name: 'Phase 4 — AI 구조화 com.due.ai', owner: 'BE', done: false },
+  { name: 'Phase 3 — 제도 데이터 data/programs', owner: '데이터', done: false },
+  { name: 'Phase 4 — AI 구조화 internal/ai', owner: 'BE', done: false },
   { name: 'Phase 5 — 결과 화면 · 대화형 입력', owner: 'FE', done: false },
   { name: 'Phase 6 — 문서 번역', owner: 'BE/FE', done: false },
   { name: 'Phase 7 — 데모 안정화', owner: '공통', done: false },
