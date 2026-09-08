@@ -10,8 +10,10 @@
  *   그 사실을 감추지 않고 화면으로 설명한다. 데모의 핵심 장면이다.
  */
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { MatchResult, MatchStatus } from '@/types';
+import { ApiError, explain } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import ProgramRow from '@/components/ProgramRow';
 import ResultSummary from '@/components/ResultSummary';
@@ -45,6 +47,36 @@ const GROUPS: Array<{
 export default function ResultPage() {
   const result = useSession((s) => s.result);
   const explanation = useSession((s) => s.explanation);
+  const setExplanation = useSession((s) => s.setExplanation);
+  const [writing, setWriting] = useState(false);
+
+  // 같은 결과에 대해 두 번 부르지 않는다. AI 호출은 돈이 든다
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (!result || explanation || asked.current) return;
+    asked.current = true;
+
+    let alive = true;
+    setWriting(true);
+    explain({ results: result.results, summary: result.summary })
+      .then((r) => {
+        if (alive) setExplanation(r.explanation);
+      })
+      .catch((e: ApiError) => {
+        // ★ 설명문은 덤이다. 없어도 이 화면은 완전히 동작한다.
+        //   AI 가 없거나(503) 실패해도(502) 화면에 오류를 띄우지 않는다 —
+        //   판정 결과와 조건별 근거가 이미 다 나와 있기 때문이다.
+        if (!e.isAiFallback) console.warn('설명 생성 실패:', e.code);
+      })
+      .finally(() => {
+        if (alive) setWriting(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [result, explanation, setExplanation]);
 
   // 새로고침했거나 결과 없이 직접 들어온 경우
   if (!result) {
@@ -68,6 +100,15 @@ export default function ResultPage() {
       </div>
 
       {/* AI 설명문. 없어도 결과 화면은 완전히 동작한다 */}
+      {writing && !explanation && (
+        <div className="mt-8 flex flex-col gap-2 rounded-[3px] border-l-[3px] border-border bg-surface px-5 py-4">
+          <span className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+            읽기 쉬운 설명을 쓰는 중
+          </span>
+          <span className="h-3 w-[85%] animate-pulse rounded-[2px] bg-border-soft" />
+          <span className="h-3 w-[60%] animate-pulse rounded-[2px] bg-border-soft" />
+        </div>
+      )}
       {explanation && (
         <p className="mt-8 rounded-[3px] border-l-[3px] border-brand bg-brand-weak px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
           {explanation}
