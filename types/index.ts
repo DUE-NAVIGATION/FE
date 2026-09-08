@@ -1,13 +1,14 @@
 /**
  * DUE — BE ↔ FE API 계약 타입
  *
- * ★ 이 파일은 백엔드(Go) `be/internal/model/*` 의 거울이다.
+ * ★ 이 파일은 Go 백엔드 `api/internal/model/*` 의 거울이다.
  *   Go 쪽 struct 를 고치면 여기도 같이 고친다. 한쪽만 고치면 런타임에 깨진다.
  *
  *   대응표
- *     UserContext     ← model/context.go
- *     Condition·Program ← model/program.go
- *     ConditionResult·MatchResult·MatchSummary ← model/result.go
+ *     UserContext                       ← model/context.go
+ *     Condition · Program               ← model/program.go
+ *     ConditionResult · MatchResult · Summary ← model/result.go
+ *     EvaluateResponse · ExtractResponse 등  ← handler/*.go
  *
  * 원칙 (CLAUDE.md 참조)
  *  - 판정은 백엔드 규칙 엔진이 한다. 프론트는 결과를 그리기만 한다.
@@ -16,7 +17,7 @@
  */
 
 // ────────────────────────────────────────────────────────────
-// 1. 사용자 상황 (판정 입력값)
+// 1. 사용자 상황 (판정 입력값) — model/context.go
 // ────────────────────────────────────────────────────────────
 
 /** 주거 형태 */
@@ -39,11 +40,22 @@ export type EmploymentStatus =
   | 'ON_LEAVE' // 휴직
   | 'OTHER';
 
+export type DisabilityLevel = 'SEVERE' | 'MILD';
+
+export type BasicLivelihoodType =
+  | 'LIVELIHOOD' // 생계급여
+  | 'MEDICAL' // 의료급여
+  | 'HOUSING' // 주거급여
+  | 'EDUCATION' // 교육급여
+  | 'NONE'; // 수급자 아님
+
 /**
  * 사용자 상황.
  *
  * ※ 모든 필드는 optional 이다 — 모르는 값이 있는 게 정상이다.
- *   비어 있는 필드는 그 조건을 UNKNOWN 으로 만들고, 결과는 NEEDS_INFO 가 된다.
+ *   Go 쪽은 전부 포인터(`*int`, `*bool` …)이며, "모름"과 "0"을 구분하기 위한
+ *   설계다. TypeScript 에서는 `undefined` 가 그 역할을 한다.
+ *   ★ 모르는 값에 0 이나 false 를 채워 보내지 마라. 0 은 "0원"이라는 뜻이다.
  * ※ 이름·주소·주민번호 등 식별정보는 이 타입에 절대 넣지 않는다.
  */
 export interface UserContext {
@@ -51,9 +63,9 @@ export interface UserContext {
   householdSize?: number;
   /** 만 나이 */
   age?: number;
-  /** 월 소득 (원). 세전 소득평가액 기준 */
+  /** 월 소득 (원). 소득평가액 기준 */
   incomeMonthly?: number;
-  /** 재산 총액 (원). 소득환산 대상 */
+  /** 재산 총액 (원). 지금은 제도별 재산 상한과 직접 비교한다 — 소득환산 파라미터는 미확정 */
   assets?: number;
   /** 주거 형태 */
   housingType?: HousingType;
@@ -65,29 +77,35 @@ export interface UserContext {
   employmentStatus?: EmploymentStatus;
   /** 한부모 가구 여부 */
   isSingleParent?: boolean;
-  /** 자녀 나이 목록 (만 나이) */
+  /**
+   * 자녀 나이 목록 (만 나이).
+   * ★ `undefined` = 모름, `[]` = 자녀 없음. 둘은 다른 뜻이다.
+   */
   childrenAges?: number[];
   /** 장애 여부 */
   hasDisability?: boolean;
   /** 장애 정도 (있을 경우) */
-  disabilityLevel?: 'SEVERE' | 'MILD';
+  disabilityLevel?: DisabilityLevel;
   /** 임신·출산 여부 */
   isPregnant?: boolean;
-  /** 현재 수급 중인 제도 id 또는 급여 코드 목록 (중복수급·배제 판정용) */
+  /** 현재 수급 중인 제도 id 목록 (중복수급·배제 판정용) */
   receivingPrograms?: string[];
   /** 거주 지역 (시도 단위. 지역 한정 제도 판정용) */
   region?: string;
   /** 기초생활수급 자격 구분 */
-  basicLivelihoodType?: 'LIVELIHOOD' | 'MEDICAL' | 'HOUSING' | 'EDUCATION' | 'NONE';
-  /** 계산 엔진이 채우는 파생값 — 중위소득 대비 비율(%) */
+  basicLivelihoodType?: BasicLivelihoodType;
+  /**
+   * 계산 엔진이 채우는 파생값 — 중위소득 대비 비율(%).
+   * ★ 프론트에서 채워 보내지 않는다. 백엔드가 계산한다.
+   */
   householdIncomePct?: number;
 }
 
-/** UserContext 의 키. 조건의 field 는 이 중 하나여야 한다. */
+/** UserContext 의 키. 입력 폼을 조립할 때 쓴다. */
 export type UserContextField = keyof UserContext;
 
 // ────────────────────────────────────────────────────────────
-// 2. 조건 (제도 자격요건의 최소 단위)
+// 2. 조건 (제도 자격요건의 최소 단위) — model/program.go
 // ────────────────────────────────────────────────────────────
 
 export type ConditionOp =
@@ -99,12 +117,20 @@ export type ConditionOp =
   | 'contains' // value: primitive — 대상 배열이 값을 포함
   | 'exists'; // value 무시 — 값이 존재하기만 하면 PASS
 
-export type ConditionValue = number | string | boolean | Array<number | string>;
+export type ConditionValue =
+  | number
+  | string
+  | boolean
+  | Array<number | string>;
 
 /** 단일 조건 */
 export interface Condition {
-  /** 판정 대상 필드 */
-  field: UserContextField;
+  /**
+   * 판정 대상 필드.
+   * ★ Go 쪽이 `string` 이므로 여기서도 `string` 이다. 제도 JSON 에 오타가
+   *   있어도 화면이 깨지지 않아야 한다 — 유효성은 백엔드가 검사한다.
+   */
+  field: string;
   op: ConditionOp;
   value?: ConditionValue;
   /** 화면에 보여줄 사람 말 설명. 예: "만 19~34세" */
@@ -114,7 +140,7 @@ export interface Condition {
 }
 
 // ────────────────────────────────────────────────────────────
-// 3. 제도 정의 (제도 JSON 과 1:1)
+// 3. 제도 정의 (data/programs/*.json 과 1:1)
 // ────────────────────────────────────────────────────────────
 
 export type ProgramCategory =
@@ -151,12 +177,12 @@ export interface Benefit {
   months?: number;
   /** RATE 일 때 감면율(%) */
   ratePct?: number;
-  /** 금액이 가구원수·소득에 따라 달라지는 등, 단순 산정이 불가할 때의 설명 */
+  /** 금액 산정이 불가할 때의 설명 */
   note?: string;
 }
 
 export interface ApplyInfo {
-  /** 신청 채널 */
+  /** 신청 채널. 예: BOKJIRO, COMMUNITY_CENTER */
   channel: string[];
   /** 필요 서류 */
   documents: string[];
@@ -167,14 +193,11 @@ export interface ApplyInfo {
 export interface SourceInfo {
   /** 공식 안내 페이지 URL */
   url: string;
-  /**
-   * 개정일 (YYYY-MM-DD). 심사에서 물어본다 — 반드시 기입.
-   * ★ 필드명은 camelCase 다. 제도 JSON 에 `revised_at` 으로 쓰면 백엔드가 읽지 못한다
-   */
+  /** 개정일 (YYYY-MM-DD). 심사에서 물어본다 — 반드시 기입 */
   revisedAt: string;
   /** 출처 기관명 */
   agency?: string;
-  /** 작성자 메모 (근거 문서, 대조 필요 사항 등) */
+  /** 작성자 메모. 표현하지 못한 요건을 여기 남긴다 */
   note?: string;
 }
 
@@ -192,16 +215,16 @@ export interface Program {
 }
 
 // ────────────────────────────────────────────────────────────
-// 4. 판정 결과
+// 4. 판정 결과 — model/result.go
 // ────────────────────────────────────────────────────────────
 
-/** 조건 단위 판정. UNKNOWN = 입력값이 없어 판정 불가 */
+/** 조건 단위 판정. UNKNOWN = 입력값이 없어 판정 불가. FAIL 이 아니다 */
 export type ConditionStatus = 'PASS' | 'FAIL' | 'UNKNOWN';
 
 export interface ConditionResult {
   condition: Condition;
   status: ConditionStatus;
-  /** 사용자 입력의 실제 값 (화면의 "입력: 29세") */
+  /** 사용자 입력의 실제 값 (화면의 "입력: 33세"). 모르면 없음 */
   actual?: unknown;
   /** 사람 말 사유 */
   reason: string;
@@ -218,37 +241,27 @@ export type MatchStatus = 'ELIGIBLE' | 'INELIGIBLE' | 'NEEDS_INFO';
 export interface MatchResult {
   program: Program;
   status: MatchStatus;
-  /** 조건 단위 근거. 설명 가능성의 핵심 — 항상 채운다 */
+  /** 조건 단위 근거. 설명 가능성의 핵심 — 항상 채워져 온다 */
   conditions: ConditionResult[];
   /** 연간 예상 수령액 (원). 산정 불가면 0 */
   estimatedAmount: number;
-  /** 판정에 더 필요한 필드 목록. 없으면 빈 배열 */
-  missingFields: UserContextField[];
+  /**
+   * 판정에 더 필요한 필드 이름.
+   * ★ status 가 NEEDS_INFO 일 때만 채워진다. 제도 JSON 오류로 생긴
+   *   UNKNOWN 은 여기 들어오지 않는다 (사용자에게 물어볼 것이 아니므로).
+   */
+  missingFields: string[];
 }
 
-/**
- * 결과 화면 상단의 요약. 백엔드 `model.Summary` 와 1:1.
- * "확인된 것 6건 · 연 4,800,000원 · 추가 확인 3건"
- *
- * ★ 제도 목록은 여기 들어 있지 않다. `EvaluateResponse.results` 를 상태별로
- *   그룹핑해서 그린다 — 판정도 분류도 백엔드가 이미 끝냈다.
- */
-export interface MatchSummary {
+/** 결과 화면 상단의 요약 */
+export interface Summary {
   eligibleCount: number;
   needsInfoCount: number;
   ineligibleCount: number;
-  /** ELIGIBLE 합산 연간 예상액 (원) */
+  /** ELIGIBLE 만 합산한 연간 예상액 (원) */
   totalAnnualAmount: number;
   /** 중복수급 배제로 제거된 제도 id */
   excludedByConflict?: string[];
-}
-
-/** POST /api/evaluate 의 응답 */
-export interface EvaluateResponse {
-  results: MatchResult[];
-  summary: MatchSummary;
-  /** "실제 수급 여부는 관할 기관의 심사로 결정됩니다" — 화면에서 지우지 않는다 */
-  disclaimer: string;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -260,7 +273,7 @@ export type RelationType =
   | 'REDUCING' // 동시 수급 시 감액
   | 'PREREQUISITE'; // 선행 조건
 
-export interface ProgramRelation {
+export interface Relation {
   from: string;
   to: string;
   type: RelationType;
@@ -270,8 +283,22 @@ export interface ProgramRelation {
 }
 
 // ────────────────────────────────────────────────────────────
-// 6. 기준중위소득 표
+// 6. 기준중위소득 표 — data/median-income.json 과 1:1
 // ────────────────────────────────────────────────────────────
+
+/**
+ * 재산 → 월 소득 환산 파라미터.
+ *
+ * ★ 아직 확인하지 못해 `null` 이다 (2026-09-09 자문 예정). 추측해 채우지 마라.
+ *   비어 있는 동안 `assets` 는 제도별 재산 상한과 직접 비교만 한다.
+ */
+export interface PropertyConversion {
+  /** 기본재산액 (원). 이 금액까지는 환산하지 않는다 */
+  basicDeduction: number;
+  /** 월 소득환산율 (%) */
+  monthlyRatePct: number;
+  source: SourceInfo;
+}
 
 export interface MedianIncomeTable {
   /** 기준연도 */
@@ -281,47 +308,111 @@ export interface MedianIncomeTable {
   byHouseholdSize: Record<string, number>;
   /** 표에 없는 큰 가구는 1인 증가시마다 이 금액을 더한다 */
   extraPerPerson: number;
-  /** 재산의 소득환산 파라미터. 확인되지 않았으면 null */
+  /** 확인되지 않았으면 null */
   propertyConversion: PropertyConversion | null;
 }
 
-/** 재산 → 월 소득 환산 파라미터 */
-export interface PropertyConversion {
-  /** 기본재산액 (원). 이 금액까지는 환산하지 않는다 */
-  basicDeduction: number;
-  /** 월 소득환산율 (%) */
-  monthlyRatePct: number;
-  source: SourceInfo;
-}
-
 // ────────────────────────────────────────────────────────────
-// 7. AI 계층 (구조화 전용 — 판정 금지)
+// 7. AI 계층 — 구조화·설명 전용. 판정 금지
 // ────────────────────────────────────────────────────────────
 
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
-/** 자연어 → UserContext 추출 결과. 백엔드 internal/ai 의 ExtractionResult 와 대응 */
-export interface ExtractionResult {
+/** 전송 전에 가린 민감정보의 종류 — ai/sanitize.go */
+export type SanitizeKind =
+  | 'RESIDENT_ID' // 주민등록번호·외국인등록번호
+  | 'CARD_NUMBER' // 카드번호
+  | 'ACCOUNT_NUMBER' // 계좌번호
+  | 'PHONE' // 전화번호
+  | 'EMAIL'; // 이메일
+
+// ────────────────────────────────────────────────────────────
+// 8. API 응답 봉투 — handler/*.go
+// ────────────────────────────────────────────────────────────
+
+/** GET /healthz */
+export interface HealthResponse {
+  status: string;
+  service: string;
+  /** 항상 false. 설계 원칙 2를 서버가 직접 밝힌다 */
+  storesUserData: boolean;
+  programCount: number;
+  medianIncomeYear: number;
+  /** false 면 첫 화면부터 직접 입력 폼을 띄운다 */
+  aiEnabled: boolean;
+}
+
+/** GET /api/programs */
+export interface ProgramsResponse {
+  programs: Program[];
+  count: number;
+  /** 읽다가 건너뛴 제도 파일. 조용히 빠지지 않게 노출한다 */
+  problems?: Array<{ file: string; reason: string }>;
+  disclaimer: string;
+}
+
+/** POST /api/evaluate */
+export interface EvaluateRequest {
+  context: UserContext;
+}
+
+/** 결과 화면이 그릴 모든 것 */
+export interface EvaluateResponse {
+  /** 해당 → 확인필요 → 미해당 순으로 이미 정렬되어 온다. 다시 정렬하지 마라 */
+  results: MatchResult[];
+  summary: Summary;
+  /** 중위소득 대비 비율(%). 계산할 수 없었으면 null */
+  incomePct: number | null;
+  /** 기준중위소득 표의 기준연도. "2026년 기준"으로 표시한다 */
+  medianIncomeYear: number;
+  disclaimer: string;
+}
+
+/** POST /api/extract */
+export interface ExtractRequest {
+  text: string;
+}
+
+export interface ExtractResponse {
   extracted: UserContext;
-  confidence: Partial<Record<UserContextField, Confidence>>;
+  confidence: Partial<Record<string, Confidence>>;
   followUpQuestions: string[];
+  /**
+   * 전송 전에 가린 민감정보의 종류·건수.
+   * ★ 가려진 값 자체는 들어 있지 않다. 없는 걸 그리려 하지 마라.
+   */
+  sanitized?: Partial<Record<SanitizeKind, number>>;
+  disclaimer: string;
 }
 
-// ────────────────────────────────────────────────────────────
-// 8. 문서 번역 (Phase 6)
-// ────────────────────────────────────────────────────────────
-
-export interface DocumentReading {
-  /** 중학생 수준 요약 */
-  summary: string;
-  /** 이게 무슨 문서인지 */
-  whatIsIt: string;
-  /** 내가 해야 할 일 */
-  whatYouMustDo: string[];
-  /** 기한 (YYYY-MM-DD 또는 사람 말) */
-  deadline?: string;
-  /** 안 하면 생기는 일 */
-  consequenceIfIgnored?: string;
-  /** 문서에서 드러난 상황 — 제도 매칭으로 연결 */
-  inferredContext?: UserContext;
+/** POST /api/explain */
+export interface ExplainRequest {
+  results: MatchResult[];
+  summary: Summary;
 }
+
+export interface ExplainResponse {
+  explanation: string;
+  disclaimer: string;
+}
+
+/**
+ * 모든 실패 응답의 형태.
+ *   { "error": { "code": "INVALID_JSON", "message": "..." } }
+ */
+export interface ErrorBody {
+  error: { code: ApiErrorCode | string; message: string };
+}
+
+/** 프론트가 문자열 비교로 분기하는 에러 코드 — handler/respond.go */
+export type ApiErrorCode =
+  | 'INVALID_JSON'
+  | 'INVALID_REQUEST'
+  | 'BODY_TOO_LARGE'
+  | 'NOT_FOUND'
+  | 'NOT_IMPLEMENTED'
+  | 'INTERNAL'
+  /** 키가 없어 AI 를 쓸 수 없다 → 수동 입력으로 폴백 */
+  | 'AI_UNAVAILABLE'
+  /** 호출했지만 실패했다 → 수동 입력으로 폴백 */
+  | 'AI_FAILED';

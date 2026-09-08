@@ -1,0 +1,334 @@
+'use client';
+
+/**
+ * 직접 입력 폼.
+ *
+ * AI 를 못 쓸 때의 폴백이자, 대화형 추출 결과를 고치는 화면이기도 하다.
+ * 판정은 AI 없이도 완전히 동작한다 — 이 폼이 그 사실을 증명한다.
+ *
+ * ★★ 빈 칸은 `undefined` 로 보낸다. 0 이나 false 로 채우지 않는다.
+ *    0 은 "0원"이고 undefined 는 "모름"이다. 이 구분이 UNKNOWN 판정을
+ *    만들고, UNKNOWN 이 있어야 "확인필요"가 "미해당"과 갈라진다.
+ */
+
+import type {
+  BasicLivelihoodType,
+  EmploymentStatus,
+  HousingType,
+  UserContext,
+} from '@/types';
+
+const HOUSING: Array<[HousingType, string]> = [
+  ['MONTHLY_RENT', '월세'],
+  ['JEONSE', '전세'],
+  ['OWNED', '자가'],
+  ['PUBLIC_LEASE', '공공임대'],
+  ['FREE_USE', '무상거주'],
+  ['OTHER', '그 밖'],
+];
+
+const EMPLOYMENT: Array<[EmploymentStatus, string]> = [
+  ['EMPLOYED', '재직'],
+  ['SELF_EMPLOYED', '자영업'],
+  ['LOST_JOB', '실직'],
+  ['UNEMPLOYED', '미취업'],
+  ['STUDENT', '학생'],
+  ['RETIRED', '은퇴'],
+  ['ON_LEAVE', '휴직'],
+  ['OTHER', '그 밖'],
+];
+
+const BASIC_LIVELIHOOD: Array<[BasicLivelihoodType, string]> = [
+  ['NONE', '받고 있지 않음'],
+  ['LIVELIHOOD', '생계급여'],
+  ['MEDICAL', '의료급여'],
+  ['HOUSING', '주거급여'],
+  ['EDUCATION', '교육급여'],
+];
+
+export default function ManualForm({
+  value,
+  onChange,
+}: {
+  value: UserContext;
+  onChange: (patch: UserContext) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-7">
+      <Group title="가구">
+        <NumberField
+          label="가구원 수"
+          unit="명"
+          hint="본인 포함"
+          value={value.householdSize}
+          onChange={(v) => onChange({ householdSize: v })}
+        />
+        <NumberField
+          label="나이"
+          unit="세"
+          hint="만 나이"
+          value={value.age}
+          onChange={(v) => onChange({ age: v })}
+        />
+        <ChoiceField
+          label="한부모 가구인가요"
+          value={boolToChoice(value.isSingleParent)}
+          options={[
+            ['yes', '예'],
+            ['no', '아니오'],
+          ]}
+          onChange={(v) => onChange({ isSingleParent: choiceToBool(v) })}
+        />
+        <TextField
+          label="자녀 나이"
+          hint="쉼표로 구분. 자녀가 없으면 '없음'"
+          placeholder="예: 7, 12"
+          value={childrenToText(value.childrenAges)}
+          onChange={(v) => onChange({ childrenAges: textToChildren(v) })}
+        />
+      </Group>
+
+      <Group title="소득과 재산">
+        <NumberField
+          label="월 소득"
+          unit="원"
+          hint="세전. 대략이어도 됩니다"
+          value={value.incomeMonthly}
+          onChange={(v) => onChange({ incomeMonthly: v })}
+        />
+        <NumberField
+          label="재산 총액"
+          unit="원"
+          hint="집·차·예금을 합친 값"
+          value={value.assets}
+          onChange={(v) => onChange({ assets: v })}
+        />
+        <ChoiceField
+          label="기초생활수급 여부"
+          value={value.basicLivelihoodType ?? ''}
+          options={BASIC_LIVELIHOOD}
+          onChange={(v) =>
+            onChange({ basicLivelihoodType: (v || undefined) as BasicLivelihoodType })
+          }
+        />
+      </Group>
+
+      <Group title="주거">
+        <ChoiceField
+          label="주거 형태"
+          value={value.housingType ?? ''}
+          options={HOUSING}
+          onChange={(v) => onChange({ housingType: (v || undefined) as HousingType })}
+        />
+        <NumberField
+          label="보증금"
+          unit="원"
+          value={value.deposit}
+          onChange={(v) => onChange({ deposit: v })}
+        />
+        <NumberField
+          label="월세"
+          unit="원"
+          value={value.monthlyRent}
+          onChange={(v) => onChange({ monthlyRent: v })}
+        />
+      </Group>
+
+      <Group title="일과 건강">
+        <ChoiceField
+          label="취업 상태"
+          value={value.employmentStatus ?? ''}
+          options={EMPLOYMENT}
+          onChange={(v) =>
+            onChange({ employmentStatus: (v || undefined) as EmploymentStatus })
+          }
+        />
+        <ChoiceField
+          label="장애가 있으신가요"
+          value={boolToChoice(value.hasDisability)}
+          options={[
+            ['yes', '예'],
+            ['no', '아니오'],
+          ]}
+          onChange={(v) => onChange({ hasDisability: choiceToBool(v) })}
+        />
+        <ChoiceField
+          label="임신·출산 중이신가요"
+          value={boolToChoice(value.isPregnant)}
+          options={[
+            ['yes', '예'],
+            ['no', '아니오'],
+          ]}
+          onChange={(v) => onChange({ isPregnant: choiceToBool(v) })}
+        />
+      </Group>
+    </div>
+  );
+}
+
+// ── 조각 ────────────────────────────────────────────────────
+
+function Group({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="flex flex-col gap-4">
+      <legend className="mb-2 w-full border-b border-border pb-1.5 font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+        {title}
+      </legend>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </fieldset>
+  );
+}
+
+function Shell({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-[0.88rem] font-medium">{label}</span>
+      {children}
+      {hint && <span className="text-[0.8rem] text-faint">{hint}</span>}
+    </label>
+  );
+}
+
+const INPUT =
+  'w-full rounded-[3px] border border-border bg-card px-3.5 py-2.5 text-[0.95rem] text-foreground placeholder:text-faint focus-visible:border-brand focus-visible:outline-offset-0';
+
+function NumberField({
+  label,
+  unit,
+  hint,
+  value,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  hint?: string;
+  value?: number;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <Shell label={label} hint={hint}>
+      <span className="flex items-center gap-2">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          // ★ 빈 문자열은 undefined 로. 0 으로 바꾸지 않는다
+          value={value ?? ''}
+          placeholder="모름"
+          onChange={(e) =>
+            onChange(e.target.value === '' ? undefined : Number(e.target.value))
+          }
+          className={`tabular ${INPUT}`}
+        />
+        <span className="shrink-0 text-[0.85rem] text-muted">{unit}</span>
+      </span>
+    </Shell>
+  );
+}
+
+function TextField({
+  label,
+  hint,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Shell label={label} hint={hint}>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className={INPUT}
+      />
+    </Shell>
+  );
+}
+
+function ChoiceField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<[string, string]>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Shell label={label}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={INPUT}
+      >
+        {/* 기본값은 "모름"이다. 아무거나 골라진 채로 시작하면 안 된다 */}
+        <option value="">모름</option>
+        {options.map(([v, l]) => (
+          <option key={v} value={v}>
+            {l}
+          </option>
+        ))}
+      </select>
+    </Shell>
+  );
+}
+
+// ── 변환 ────────────────────────────────────────────────────
+
+function boolToChoice(v?: boolean): string {
+  if (v === undefined) return '';
+  return v ? 'yes' : 'no';
+}
+
+function choiceToBool(v: string): boolean | undefined {
+  if (v === 'yes') return true;
+  if (v === 'no') return false;
+  return undefined;
+}
+
+/**
+ * ★ `undefined`(모름) 와 `[]`(자녀 없음) 는 다른 뜻이다.
+ *   "없음" 이라고 적으면 빈 배열, 비워두면 undefined 가 된다.
+ */
+function childrenToText(v?: number[]): string {
+  if (v === undefined) return '';
+  if (v.length === 0) return '없음';
+  return v.join(', ');
+}
+
+function textToChildren(s: string): number[] | undefined {
+  const t = s.trim();
+  if (t === '') return undefined;
+  if (t === '없음' || t === '0명') return [];
+
+  const nums = t
+    .split(/[,\s]+/)
+    .filter(Boolean)
+    .map(Number)
+    .filter((n) => Number.isFinite(n) && n >= 0);
+
+  return nums.length > 0 ? nums : undefined;
+}

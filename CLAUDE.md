@@ -85,11 +85,27 @@ npm run lint
 npm test
 ```
 
-백엔드가 떠 있어야 첫 화면에 "✅ 백엔드 연결됨"이 표시된다.
+백엔드가 떠 있어야 첫 화면 상단에 "규칙 엔진 정상 · 제도 N건"이 표시된다.
+AI 키가 없으면 "대화형 입력 꺼짐"이 함께 뜨고 직접 입력 폼으로 진행된다 — 판정 결과는 동일하다.
+
+★ 포트 주의. 3000이 다른 프로세스에 잡히면 Next 가 3001로 뜨고, 백엔드 CORS 기본값이
+`http://localhost:3000` 하나라 **모든 요청이 막힌다**. 화면에는 "백엔드 없음"만 보인다.
+`.env.local` 의 `NEXT_PUBLIC_API_BASE_URL` 과 백엔드의 `CORS_ALLOWED_ORIGINS` 를 함께 맞춘다.
 
 ## 진행 현황
 
 - [x] Phase 0 — 셋업 + API 계약 타입
-- [ ] Phase 5 — 대화형 입력(`/`) · 판정 결과(`/result`) ★ 결과 화면부터
+- [~] Phase 5 — 판정 결과(`/result`) · 조건별 근거표 · 직접 입력(`/`) 완료.
+      대화형 입력(자유 서술 → `/api/extract`)은 화면까지 붙였으나 AI 키가 없어 미검증
 - [ ] Phase 6 — 문서 업로드 화면 (여유 시)
 - [ ] Phase 7 — 데모 안정화 (스켈레톤, 폴백, 새로고침 시연, 반응형) ★ 반드시
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

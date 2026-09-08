@@ -6,35 +6,57 @@
  * - 다크모드 자동 전환을 쓰지 않는다. 프로젝터는 대비가 낮게 나오고,
  *   시연 노트북 설정에 따라 화면이 달라지면 데모가 위험하다.
  * - 기본 글자 크기를 키운다. 고령자도 사용자다.
+ * - 액센트는 남색 하나다. 초록·주황·붉은색은 장식이 아니라
+ *   판정 상태를 뜻하는 기호이므로 그 외 용도로 쓰지 않는다.
  */
 
 :root {
-  --background: #ffffff;
-  --surface: #f5f7fa;
-  --foreground: #14181f; /* 대비 15:1 이상 */
-  --muted: #4b5563; /* 보조 텍스트. 대비 7:1 이상 */
-  --border: #d5dbe3;
+  --background: #fbfaf8; /* 행정문서의 미세한 온기 */
+  --card: #ffffff;
+  --surface: #f1f3f7;
+  --foreground: #141a21; /* 대비 15:1 이상 */
+  --muted: #4a5563; /* 보조 텍스트. 대비 7:1 이상 */
+  --faint: #78828f; /* 캡션·비활성. 대비 4.5:1 이상 */
+  --border: #d7dce4;
+  --border-soft: #e9ecf1;
 
   --brand: #12507e; /* 차분한 남색 — 공공·신뢰 */
+  --brand-strong: #0e4269; /* hover */
   --brand-weak: #e8f0f7;
 
   --pass: #1c7c4a; /* 해당 */
+  --pass-weak: #e7f3ec;
   --unknown: #9a6200; /* 확인 필요 */
+  --unknown-weak: #fbf1de;
+  --unknown-tint: #fdfaf3; /* UNKNOWN 행 배경 — FAIL 과 눈으로 구분 */
   --fail: #8a2b2b; /* 미해당 */
+  --fail-weak: #f6eaea;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-card: var(--card);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+
   --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
   --color-brand-weak: var(--brand-weak);
+
   --color-pass: var(--pass);
+  --color-pass-weak: var(--pass-weak);
   --color-unknown: var(--unknown);
+  --color-unknown-weak: var(--unknown-weak);
+  --color-unknown-tint: var(--unknown-tint);
   --color-fail: var(--fail);
-  --font-sans: var(--font-noto-sans-kr);
+  --color-fail-weak: var(--fail-weak);
+
+  --font-sans: var(--font-plex-sans-kr);
+  --font-mono: var(--font-plex-mono);
 }
 
 html {
@@ -44,7 +66,40 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-sans-kr), system-ui, sans-serif;
+  font-family: var(--font-plex-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic",
+    system-ui, sans-serif;
   line-height: 1.7;
   word-break: keep-all; /* 한국어 줄바꿈 */
+  overflow-wrap: anywhere;
+}
+
+/* 금액·비율·필드명은 자릿수를 맞춘다 */
+.tabular {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 키보드 초점은 항상 보인다 */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* 결과 행은 한 번만 순서대로 들어온다. 그 외 애니메이션은 쓰지 않는다 */
+@media (prefers-reduced-motion: no-preference) {
+  .row-rise {
+    animation: row-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  @keyframes row-rise {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
