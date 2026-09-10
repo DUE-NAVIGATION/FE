@@ -10,7 +10,12 @@
  */
 
 import type { ConditionResult } from '@/types';
-import { actualLabel, criterion, fieldLabel } from '@/lib/format';
+import {
+  actualLabel,
+  criterion,
+  displayStatus,
+  fieldLabel,
+} from '@/lib/format';
 import { ConditionPill } from '@/components/StatusPill';
 
 export default function EvidenceTable({
@@ -26,8 +31,11 @@ export default function EvidenceTable({
     );
   }
 
-  const unknownCount = conditions.filter((c) => c.status === 'UNKNOWN').length;
-  const failCount = conditions.filter((c) => c.status === 'FAIL').length;
+  // ★ 집계도 화면 기준으로 센다. 배제 조건은 뜻이 뒤집히므로
+  //   엔진 상태로 세면 "통과인데 실패 1건" 같은 문장이 나온다
+  const shown = conditions.map(displayStatus);
+  const unknownCount = shown.filter((s) => s === 'UNKNOWN').length;
+  const failCount = shown.filter((s) => s === 'FAIL').length;
 
   return (
     <div className="overflow-hidden rounded-[3px] border border-border">
@@ -50,7 +58,9 @@ export default function EvidenceTable({
           <tbody>
             {conditions.map((c, i) => {
               const actual = actualLabel(c.actual, c.condition.field);
-              const isUnknown = c.status === 'UNKNOWN';
+              const status = displayStatus(c);
+              const isUnknown = status === 'UNKNOWN';
+              const isExclusion = c.group === 'none';
 
               return (
                 <tr
@@ -71,10 +81,15 @@ export default function EvidenceTable({
                     {actual.text}
                   </td>
                   <td className="tabular border-b border-border-soft px-5 py-3 align-top text-[0.86rem] whitespace-nowrap text-muted">
+                    {/* ★ 배제 조건은 "이러면 안 된다" 는 뜻이다. 그냥 "= 재직"
+                        으로 두면 "재직이어야 한다" 로 읽힌다 */}
+                    {isExclusion && (
+                      <span className="mr-1 text-faint">제외 조건 ·</span>
+                    )}
                     {criterion(c.condition.op, c.condition.value, c.condition.field)}
                   </td>
                   <td className="w-px border-b border-border-soft px-5 py-3 align-top">
-                    <ConditionPill status={c.status} />
+                    <ConditionPill status={status} />
                   </td>
                   <td className="border-b border-border-soft px-5 py-3 align-top text-[0.88rem] text-muted">
                     {c.reason}

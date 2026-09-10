@@ -8,6 +8,7 @@ import {
   situationLine,
   telHref,
 } from './facility';
+import { displayStatus } from './format';
 import type { Facility, UserContext } from '@/types';
 
 function facility(over: Partial<Facility> = {}): Facility {
@@ -173,5 +174,30 @@ describe('checklistOf', () => {
     const got = checklistOf(facility());
     expect(got.fromData).toBe(false);
     expect(got.items.length).toBeGreaterThan(0);
+  });
+});
+
+describe('displayStatus — 배제 조건 표시 뒤집기', () => {
+  // ★ 화면이 조건의 뜻을 정반대로 보여주던 버그를 막는다.
+  //   "재직 중이 아닐 것" 조건에서 실직자에게 붉은 FAIL 이 떴었다.
+  it('none 그룹은 PASS 와 FAIL 을 뒤집는다', () => {
+    expect(displayStatus({ group: 'none', status: 'FAIL' })).toBe('PASS');
+    expect(displayStatus({ group: 'none', status: 'PASS' })).toBe('FAIL');
+  });
+
+  it('none 그룹이어도 UNKNOWN 은 그대로다 — 모르는 건 뒤집을 게 없다', () => {
+    expect(displayStatus({ group: 'none', status: 'UNKNOWN' })).toBe('UNKNOWN');
+  });
+
+  it('나머지 그룹은 그대로 쓴다', () => {
+    for (const group of ['all', 'any', 'coverage'] as const) {
+      expect(displayStatus({ group, status: 'PASS' })).toBe('PASS');
+      expect(displayStatus({ group, status: 'FAIL' })).toBe('FAIL');
+    }
+  });
+
+  // 백엔드가 group 을 안 주는 옛 응답이 와도 화면이 깨지지 않아야 한다
+  it('group 이 없으면 원래 상태를 쓴다', () => {
+    expect(displayStatus({ status: 'FAIL' })).toBe('FAIL');
   });
 });

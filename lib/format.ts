@@ -1,3 +1,5 @@
+import type { ConditionStatus } from '@/types';
+
 /**
  * 화면 표기 도우미.
  *
@@ -165,6 +167,25 @@ const ENUM_LABEL: Record<string, Record<string, string>> = {
 function enumLabel(field: string | undefined, v: unknown): string | null {
   if (!field || typeof v !== 'string') return null;
   return ENUM_LABEL[field]?.[v] ?? null;
+}
+
+/**
+ * 화면에 보여줄 조건 판정.
+ *
+ * ★ 배제 조건(none)은 뜻이 뒤집힌다.
+ *   "재직 중이 아닐 것" 조건에서 엔진 FAIL 은 "배제에 걸리지 않았다 = 통과" 다.
+ *   그대로 그리면 실직자에게 붉은 FAIL 이 뜬다 — 실제로 있었던 버그다.
+ *
+ * ★ 엔진의 status 는 원자료로 남겨두고 표시만 뒤집는다.
+ */
+export function displayStatus(c: {
+  group?: string;
+  status: ConditionStatus;
+}): ConditionStatus {
+  if (c.group !== 'none') return c.status;
+  if (c.status === 'PASS') return 'FAIL';
+  if (c.status === 'FAIL') return 'PASS';
+  return 'UNKNOWN';
 }
 
 /**

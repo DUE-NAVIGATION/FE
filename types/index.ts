@@ -227,8 +227,20 @@ export interface Program {
 /** 조건 단위 판정. UNKNOWN = 입력값이 없어 판정 불가. FAIL 이 아니다 */
 export type ConditionStatus = 'PASS' | 'FAIL' | 'UNKNOWN';
 
+/**
+ * 조건이 속한 그룹.
+ *
+ * ★ `none` 은 배제 조건이라 뜻이 뒤집힌다. "재직 중이 아닐 것" 조건에서
+ *   엔진의 PASS 는 "재직 중이다 = 탈락", FAIL 은 "재직 중이 아니다 = 통과" 다.
+ *   화면은 이 값을 보고 표시를 뒤집어야 한다 (`displayStatus`).
+ * ★ `coverage` 는 시설의 관할 지역이고 뜻이 뒤집히지 않는다.
+ */
+export type ConditionGroup = 'all' | 'any' | 'none' | 'coverage';
+
 export interface ConditionResult {
   condition: Condition;
+  group: ConditionGroup;
+  /** ★ 엔진 관점의 원자료다. 화면에 그대로 쓰지 말고 displayStatus 를 거칠 것 */
   status: ConditionStatus;
   /** 사용자 입력의 실제 값 (화면의 "입력: 33세"). 모르면 없음 */
   actual?: unknown;
