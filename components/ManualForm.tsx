@@ -38,6 +38,32 @@ const EMPLOYMENT: Array<[EmploymentStatus, string]> = [
   ['OTHER', '그 밖'],
 ];
 
+/**
+ * 17개 시도.
+ *
+ * ★ 시설 판정의 1순위 조건이다. 여기가 비면 관할이 UNKNOWN 이 되어
+ *   갈 수 있는 곳이 전부 "확인 필요" 로 빠진다.
+ */
+const SIDO: Array<[string, string]> = [
+  ['서울특별시', '서울특별시'],
+  ['부산광역시', '부산광역시'],
+  ['대구광역시', '대구광역시'],
+  ['인천광역시', '인천광역시'],
+  ['광주광역시', '광주광역시'],
+  ['대전광역시', '대전광역시'],
+  ['울산광역시', '울산광역시'],
+  ['세종특별자치시', '세종특별자치시'],
+  ['경기도', '경기도'],
+  ['강원특별자치도', '강원특별자치도'],
+  ['충청북도', '충청북도'],
+  ['충청남도', '충청남도'],
+  ['전북특별자치도', '전북특별자치도'],
+  ['전라남도', '전라남도'],
+  ['경상북도', '경상북도'],
+  ['경상남도', '경상남도'],
+  ['제주특별자치도', '제주특별자치도'],
+];
+
 const BASIC_LIVELIHOOD: Array<[BasicLivelihoodType, string]> = [
   ['NONE', '받고 있지 않음'],
   ['LIVELIHOOD', '생계급여'],
@@ -55,6 +81,22 @@ export default function ManualForm({
 }) {
   return (
     <div className="flex flex-col gap-7">
+      <Group title="사시는 곳">
+        <ChoiceField
+          label="시 · 도"
+          value={value.region ?? ''}
+          options={SIDO}
+          onChange={(v) => onChange({ region: v || undefined })}
+        />
+        <TextField
+          label="시 · 군 · 구"
+          hint="가까운 시설을 찾는 데 씁니다. 주소는 묻지 않습니다"
+          placeholder="예: 관악구"
+          value={value.district ?? ''}
+          onChange={(v) => onChange({ district: v.trim() || undefined })}
+        />
+      </Group>
+
       <Group title="가구">
         <NumberField
           label="가구원 수"

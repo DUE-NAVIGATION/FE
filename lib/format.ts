@@ -87,7 +87,8 @@ const FIELD_LABEL: Record<string, string> = {
   disabilityLevel: '장애 정도',
   isPregnant: '임신·출산 여부',
   receivingPrograms: '현재 받고 있는 제도',
-  region: '거주 지역',
+  region: '사시는 시·도',
+  district: '사시는 시·군·구',
   basicLivelihoodType: '기초생활수급 구분',
   householdIncomePct: '중위소득 대비 비율',
 };

@@ -90,8 +90,14 @@ export interface UserContext {
   isPregnant?: boolean;
   /** 현재 수급 중인 제도 id 목록 (중복수급·배제 판정용) */
   receivingPrograms?: string[];
-  /** 거주 지역 (시도 단위. 지역 한정 제도 판정용) */
+  /** 거주 시도 (예: "서울특별시"). 지역 한정 제도·시설 판정용 */
   region?: string;
+  /**
+   * 거주 시군구 (예: "관악구").
+   * ★ 시설 판정의 1순위 조건이다 — 시설은 물리적 장소라 관할을 벗어나면
+   *   안내가 헛걸음이 된다. 모르면 관할이 FAIL 이 아니라 UNKNOWN 이 된다.
+   */
+  district?: string;
   /** 기초생활수급 자격 구분 */
   basicLivelihoodType?: BasicLivelihoodType;
   /**
@@ -265,6 +271,117 @@ export interface Summary {
 }
 
 // ────────────────────────────────────────────────────────────
+// 4-2. 시설 — model/facility.go 의 거울
+//
+// 제도가 "무엇을 받을 수 있는가" 라면 시설은 "어디로 가면 되는가" 다.
+// 사각지대에 있는 사람에게는 대개 후자가 더 급하다.
+// ────────────────────────────────────────────────────────────
+
+export type FacilityType =
+  | 'CHILD_CENTER' // 지역아동센터
+  | 'COMMUNITY_WELFARE' // 종합사회복지관
+  | 'ELDERLY' // 노인복지관·경로당
+  | 'DISABILITY' // 장애인복지관
+  | 'MENTAL_HEALTH' // 정신건강복지센터
+  | 'SELF_SUFFICIENCY' // 지역자활센터
+  | 'SHELTER' // 쉼터·보호시설
+  | 'SINGLE_PARENT' // 한부모가족복지시설
+  | 'FAMILY_CENTER' // 가족센터·건강가정지원센터
+  | 'JOB_CENTER' // 고용복지플러스센터
+  | 'HOTLINE' // 전화 상담 창구
+  | 'COMMUNITY_CENTER' // 행정복지센터(주민센터)
+  | 'OTHER';
+
+/** 관할 범위. 시설 판정의 1순위 조건이다 */
+export type CoverageScope = 'NATIONWIDE' | 'SIDO' | 'SIGUNGU';
+
+export interface Coverage {
+  scope: CoverageScope;
+  /** SIDO · SIGUNGU 일 때만 */
+  sido?: string;
+  /** SIGUNGU 일 때만 */
+  sigungu?: string;
+  /** 관할을 벗어나도 이용 가능한 예외 안내 */
+  note?: string;
+}
+
+export interface FacilityLocation {
+  sido: string;
+  sigungu: string;
+  roadAddress: string;
+  lotAddress?: string;
+  /** 지도 링크용. 없으면 주소로 검색한다 */
+  lat?: number;
+  lng?: number;
+}
+
+/**
+ * 연결 수단. ★ 이 구조체가 이 서비스의 결말이다.
+ *
+ * 비어 있는 값을 화면에서 지어내지 마라. 없으면 그 수단을 감춘다.
+ */
+export interface FacilityContact {
+  /** "02-880-1234" 또는 "129" 같은 단축번호 */
+  phone?: string;
+  fax?: string;
+  email?: string;
+  website?: string;
+  /** 온라인 신청·예약 페이지 */
+  applyUrl?: string;
+  /** "평일 09:00~18:00" 처럼 사람이 읽는 문자열 */
+  hours?: string;
+  /** 24시간 운영. 급한 사람에게 먼저 보여준다 */
+  always?: boolean;
+}
+
+export interface Facility {
+  id: string;
+  name: string;
+  type: FacilityType;
+  summary?: string;
+  /** 제도와 같은 구조. 규칙 엔진도 같은 것을 쓴다 */
+  eligibility: Eligibility;
+  coverage: Coverage;
+  location: FacilityLocation;
+  contact: FacilityContact;
+  /** 제공 서비스. "무료급식", "학습지원" */
+  services?: string[];
+  /** 이용료. "무료", "소득별 차등" */
+  fee?: string;
+  /** 방문·문의 시 챙길 것 */
+  documents?: string[];
+  /** 관할행정기관 */
+  authority?: string;
+  source: SourceInfo;
+}
+
+/** 시설 하나에 대한 판정 결과. MatchResult 와 형태가 같다 */
+export interface FacilityMatch {
+  facility: Facility;
+  status: MatchStatus;
+  /** ★ 첫 줄은 항상 관할 지역이다 */
+  conditions: ConditionResult[];
+  missingFields: string[];
+}
+
+export interface FacilitySummary {
+  availableCount: number;
+  needsInfoCount: number;
+  /** 관할 밖 */
+  outOfScope: number;
+  /** 지금 바로 전화할 수 있는 곳의 수 */
+  reachableNow: number;
+}
+
+/** GET /api/facilities */
+export interface FacilitiesResponse {
+  facilities: Facility[];
+  count: number;
+  problems?: Array<{ file: string; reason: string }>;
+  disclaimer: string;
+}
+
+// ────────────────────────────────────────────────────────────
 // 5. 제도 간 관계 (중복수급 판정)
 // ────────────────────────────────────────────────────────────
 
@@ -361,6 +478,13 @@ export interface EvaluateResponse {
   /** 해당 → 확인필요 → 미해당 순으로 이미 정렬되어 온다. 다시 정렬하지 마라 */
   results: MatchResult[];
   summary: Summary;
+  /**
+   * ★ 이용할 수 있는 시설. 이 서비스의 결말이다.
+   * 이용 가능 → 확인 필요 → 관할 밖 순, 같은 상태에서는 24시간 운영이 먼저다.
+   * 이미 정렬되어 오므로 다시 정렬하지 마라.
+   */
+  facilities: FacilityMatch[];
+  facilitySummary: FacilitySummary;
   /** 중위소득 대비 비율(%). 계산할 수 없었으면 null */
   incomePct: number | null;
   /** 기준중위소득 표의 기준연도. "2026년 기준"으로 표시한다 */
