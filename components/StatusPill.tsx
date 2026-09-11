@@ -10,13 +10,16 @@
 
 import type { ConditionStatus, MatchStatus } from '@/types';
 
-type Tone = 'pass' | 'unknown' | 'fail' | 'flat';
+type Tone = 'pass' | 'unknown' | 'fail' | 'flat' | 'public' | 'private';
 
 const TONE: Record<Tone, string> = {
   pass: 'bg-pass-weak text-pass',
   unknown: 'bg-unknown-weak text-unknown',
   fail: 'bg-fail-weak text-fail',
   flat: 'bg-surface text-muted',
+  // 공공 · 민간은 판정 상태가 아니다. 그래서 상태색이 아닌 남색·살구색을 쓴다
+  public: 'bg-brand-weak text-brand',
+  private: 'bg-warm-weak text-warm-strong',
 };
 
 /** 제도 단위 상태 → 화면 문구. "확인필요"는 "안 됨"이 아니다 */

@@ -17,9 +17,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { FacilityMatch, MatchResult, MatchStatus } from '@/types';
+import type { FacilityMatch, MatchResult, MatchStatus, Sector } from '@/types';
 import { ApiError, explain } from '@/lib/api';
 import { useSession } from '@/lib/session';
+import { bySector, SECTOR_INFO } from '@/lib/facility';
 import FacilityCard from '@/components/FacilityCard';
 import ProgramRow from '@/components/ProgramRow';
 import ResultSummary from '@/components/ResultSummary';
@@ -97,19 +98,23 @@ export default function ResultPage() {
   const needsInfo = facilities.filter((f) => f.status === 'NEEDS_INFO');
   const outOfScope = facilities.filter((f) => f.status === 'INELIGIBLE');
 
+  // 연락할 수 있는 곳(이용 가능 + 확인 필요)을 공공 · 민간으로 나눈다
+  const reachable = [...available, ...needsInfo];
+  const split = bySector(reachable);
+
   return (
-    <main className="mx-auto w-full max-w-[1000px] px-5 py-12 md:py-16">
+    <main className="mx-auto w-full max-w-[1100px] px-5 py-10 md:py-14">
       {/* ══ 시설 — 주인공 ══════════════════════════════════ */}
       <header className="flex flex-col gap-2">
-        <p className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
-          연락할 수 있는 곳 · 규칙 엔진 산출 · 저장하지 않음
+        <p className="text-[0.8rem] font-medium text-warm-strong">
+          2단계 · 연락할 수 있는 곳
         </p>
 
-        <h1 className="text-[clamp(1.9rem,4.5vw,2.6rem)] leading-tight font-bold tracking-[-0.03em]">
+        <h1 className="font-serif text-[clamp(1.9rem,4.5vw,2.6rem)] leading-tight font-bold tracking-[-0.03em]">
           {available.length > 0 ? (
             <>
               지금 연락하실 수 있는 곳이{' '}
-              <span className="tabular text-brand">{available.length}곳</span>{' '}
+              <span className="tabular text-gradient">{available.length}곳</span>{' '}
               있습니다
             </>
           ) : needsInfo.length > 0 ? (
@@ -132,40 +137,61 @@ export default function ResultPage() {
             이용료와 준비물을 함께 적어 두었습니다.
           </p>
         )}
+
+        {reachable.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {SECTORS.map((sector) => (
+              <a
+                key={sector}
+                href={`#sector-${sector}`}
+                className={`rounded-full px-3.5 py-1.5 text-[0.84rem] font-medium transition-colors ${
+                  sector === 'PUBLIC'
+                    ? 'bg-brand-weak text-brand hover:bg-brand/15'
+                    : 'bg-warm-weak text-warm-strong hover:bg-warm/20'
+                }`}
+              >
+                {SECTOR_INFO[sector].title}{' '}
+                <span className="tabular">{split[sector].length}곳</span>
+              </a>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* AI 설명문. 없어도 이 화면은 완전히 동작한다 */}
       {writing && !explanation && (
-        <div className="mt-7 flex flex-col gap-2 rounded-[3px] border-l-[3px] border-border bg-surface px-5 py-4">
+        <div className="mt-7 flex flex-col gap-2 rounded-xl border-l-[3px] border-border bg-surface px-5 py-4">
           <span className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
             읽기 쉬운 설명을 쓰는 중
           </span>
-          <span className="h-3 w-[85%] animate-pulse rounded-[2px] bg-border-soft" />
-          <span className="h-3 w-[60%] animate-pulse rounded-[2px] bg-border-soft" />
+          <span className="h-3 w-[85%] animate-pulse rounded-md bg-border-soft" />
+          <span className="h-3 w-[60%] animate-pulse rounded-md bg-border-soft" />
         </div>
       )}
       {explanation && (
-        <p className="mt-7 rounded-[3px] border-l-[3px] border-brand bg-brand-weak px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
+        <p className="mt-7 rounded-xl border-l-[3px] border-brand bg-brand-weak px-5 py-4 text-[0.95rem] leading-relaxed text-muted">
           {explanation}
         </p>
       )}
 
-      {available.length > 0 && (
-        <FacilityGroup
-          title="이용하실 수 있습니다"
-          note="전화번호를 눌러 바로 연결하세요"
-          noteTone="text-faint"
-          matches={available}
-          context={context}
-        />
-      )}
+      {reachable.length > 0 &&
+        SECTORS.map((sector, i) => (
+          <SectorSection
+            key={sector}
+            sector={sector}
+            first={i === 0}
+            matches={split[sector]}
+            context={context}
+          />
+        ))}
 
-      {needsInfo.length > 0 && (
+      {/* sector 가 빠진 시설 — 데이터 오류다. 숨기지 않되 공공·민간 어느 쪽에도 넣지 않는다 */}
+      {split.unknown.length > 0 && (
         <FacilityGroup
-          title="조금만 더 알려주시면 확인됩니다"
-          note="안 된다는 뜻이 아닙니다"
-          noteTone="text-unknown"
-          matches={needsInfo}
+          title="공공·민간 구분을 확인하지 못한 곳"
+          note="전화로 운영 주체를 확인해 주세요"
+          noteTone="text-faint"
+          matches={split.unknown}
           context={context}
         />
       )}
@@ -178,9 +204,9 @@ export default function ResultPage() {
 
       {/* ══ 제도 — 부가 정보 ══════════════════════════════ */}
       {results.length > 0 && (
-        <section className="mt-16 border-t-2 border-foreground pt-10">
-          <p className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
-            함께 신청할 수 있는 지원금
+        <section className="mt-20 rounded-[2rem] border border-border-soft bg-surface/60 p-6 md:p-10">
+          <p className="text-[0.8rem] font-medium text-warm-strong">
+            3단계 · 함께 신청할 수 있는 지원금
           </p>
           <p className="mt-2 max-w-[62ch] text-[0.92rem] text-muted">
             시설에 연락하실 때 아래 제도를 함께 물어보시면 좋습니다. 신청은
@@ -204,7 +230,7 @@ export default function ResultPage() {
       )}
 
       {/* ══ 고지 ══════════════════════════════════════════ */}
-      <p className="mt-12 flex flex-wrap items-baseline gap-x-4 gap-y-2 rounded-[3px] bg-surface px-5 py-4 text-[0.86rem] text-muted">
+      <p className="mt-12 flex flex-wrap items-baseline gap-x-4 gap-y-2 rounded-xl bg-surface px-5 py-4 text-[0.86rem] text-muted">
         <strong className="font-semibold text-foreground">{disclaimer}.</strong>
         <span>
           이 화면은 안내이며 공식 판정이 아닙니다. 시설의 운영시간과 이용 조건은
@@ -216,13 +242,13 @@ export default function ResultPage() {
         <button
           type="button"
           onClick={() => window.print()}
-          className="rounded-[3px] bg-brand px-6 py-3 text-[0.95rem] font-medium text-white transition-colors hover:bg-brand-strong active:translate-y-px"
+          className="rounded-full bg-brand px-6 py-3 text-[0.95rem] font-medium text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98]"
         >
           결과를 PDF로 저장
         </button>
         <Link
-          href="/"
-          className="rounded-[3px] border border-border px-6 py-3 text-[0.95rem] font-medium text-brand transition-colors hover:bg-brand-weak"
+          href="/start"
+          className="rounded-full border border-border px-6 py-3 text-[0.95rem] font-medium text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
         >
           값 고쳐서 다시 보기
         </Link>
@@ -231,6 +257,111 @@ export default function ResultPage() {
         공유 링크는 만들지 않습니다. 저장은 이 기기에만 남습니다.
       </p>
     </main>
+  );
+}
+
+// ── 공공 · 민간 구역 ────────────────────────────────────────
+
+const SECTORS: Sector[] = ['PUBLIC', 'PRIVATE'];
+
+/**
+ * 공공 또는 민간 한 구역. 안에서 다시 "이용 가능" / "확인 필요" 로 나눈다.
+ *
+ * ★ 구역이 비어도 지우지 않는다. "민간 기관은 없나?" 가 이용자가 가장 먼저
+ *   하는 질문이다. 아직 모으지 못한 것이면 그렇다고 말한다.
+ */
+function SectorSection({
+  sector,
+  first,
+  matches,
+  context,
+}: {
+  sector: Sector;
+  first: boolean;
+  matches: FacilityMatch[];
+  context: Parameters<typeof FacilityCard>[0]['context'];
+}) {
+  const info = SECTOR_INFO[sector];
+  const isPublic = sector === 'PUBLIC';
+  const ok = matches.filter((m) => m.status === 'ELIGIBLE');
+  const ask = matches.filter((m) => m.status === 'NEEDS_INFO');
+
+  return (
+    <section id={`sector-${sector}`} className="scroll-mt-6">
+      {/* 구분선 — 두 번째 구역부터 */}
+      {first ? (
+        <div className="mt-10" />
+      ) : (
+        <div
+          role="separator"
+          aria-label={`여기부터 ${info.title}`}
+          className="my-14 flex items-center gap-4"
+        >
+          <span className="sector-rule flex-1" />
+          <span className="rounded-full border border-warm/30 bg-warm-weak px-4 py-1.5 text-[0.8rem] font-semibold text-warm-strong">
+            여기부터 {info.title}
+          </span>
+          <span className="sector-rule flex-1" />
+        </div>
+      )}
+
+      <div
+        className={`flex flex-col gap-2 rounded-3xl border p-6 sm:flex-row sm:items-center sm:gap-5 ${
+          isPublic
+            ? 'border-brand/15 bg-gradient-to-r from-brand-weak to-white'
+            : 'border-warm/20 bg-gradient-to-r from-warm-weak to-white'
+        }`}
+      >
+        <span
+          className={`w-fit shrink-0 rounded-full px-3.5 py-1 text-[0.8rem] font-semibold text-white ${
+            isPublic ? 'bg-brand' : 'bg-warm-strong'
+          }`}
+        >
+          {info.label}
+        </span>
+        <div className="flex flex-col">
+          <h2 className="text-[1.2rem] font-bold tracking-[-0.025em]">
+            {info.title}{' '}
+            <span className="tabular text-[1rem] font-medium text-faint">
+              {matches.length}곳
+            </span>
+          </h2>
+          <p className="text-[0.88rem] text-muted">{info.note}</p>
+        </div>
+      </div>
+
+      {matches.length === 0 ? (
+        <p className="mt-4 rounded-2xl border border-dashed border-border px-5 py-5 text-[0.9rem] text-muted">
+          {isPublic
+            ? '사시는 지역에서 연락하실 수 있는 공공 기관을 아직 찾지 못했습니다.'
+            : '사시는 지역의 민간 기관 정보는 아직 모으는 중입니다.'}{' '}
+          <span className="text-faint">
+            위의 기관에 전화하시면 가까운 곳을 함께 안내받으실 수 있습니다.
+          </span>
+        </p>
+      ) : (
+        <>
+          {ok.length > 0 && (
+            <FacilityGroup
+              title="이용하실 수 있습니다"
+              note="전화번호를 눌러 바로 연결하세요"
+              noteTone="text-faint"
+              matches={ok}
+              context={context}
+            />
+          )}
+          {ask.length > 0 && (
+            <FacilityGroup
+              title="조금만 더 알려주시면 확인됩니다"
+              note="안 된다는 뜻이 아닙니다"
+              noteTone="text-unknown"
+              matches={ask}
+              context={context}
+            />
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -251,8 +382,8 @@ function FacilityGroup({
 }) {
   return (
     <section>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-foreground pt-10 pb-2">
-        <h2 className="text-[1.02rem] font-semibold">{title}</h2>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pt-8 pb-2">
+        <h3 className="text-[1.02rem] font-semibold">{title}</h3>
         <span className="font-mono text-[0.8rem] text-faint">
           {matches.length}곳
         </span>
@@ -331,7 +462,7 @@ function OutOfScope({
 
 function NoFacilities() {
   return (
-    <div className="mt-10 rounded-[3px] border border-border px-6 py-10 text-center">
+    <div className="mt-10 rounded-xl border border-border px-6 py-10 text-center">
       <p className="text-[1rem] font-semibold">
         연락하실 수 있는 곳을 찾지 못했습니다
       </p>
@@ -342,13 +473,13 @@ function NoFacilities() {
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <a
           href="tel:129"
-          className="rounded-[3px] bg-brand px-5 py-2.5 text-[0.9rem] font-medium text-white transition-colors hover:bg-brand-strong"
+          className="rounded-full bg-brand px-5 py-2.5 text-[0.9rem] font-medium text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98]"
         >
           129 보건복지상담센터
         </a>
         <Link
-          href="/"
-          className="rounded-[3px] border border-border px-5 py-2.5 text-[0.88rem] text-brand transition-colors hover:bg-brand-weak"
+          href="/start"
+          className="rounded-xl border border-border px-5 py-2.5 text-[0.88rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
         >
           지역 입력하기
         </Link>
@@ -411,8 +542,8 @@ function NoResult() {
         요점입니다.
       </p>
       <Link
-        href="/"
-        className="mt-2 self-start rounded-[3px] bg-brand px-6 py-3 text-[0.95rem] font-medium text-white transition-colors hover:bg-brand-strong active:translate-y-px"
+        href="/start"
+        className="mt-2 self-start rounded-full bg-brand px-6 py-3 text-[0.95rem] font-medium text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98]"
       >
         처음부터 다시 하기
       </Link>

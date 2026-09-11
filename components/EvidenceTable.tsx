@@ -38,7 +38,7 @@ export default function EvidenceTable({
   const failCount = shown.filter((s) => s === 'FAIL').length;
 
   return (
-    <div className="overflow-hidden rounded-[3px] border border-border">
+    <div className="overflow-hidden rounded-xl border border-border">
       {/* 가로로 긴 표다. 페이지 전체가 옆으로 밀리지 않게 여기서만 스크롤한다 */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[680px] border-collapse">

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans_KR, Noto_Serif_KR } from "next/font/google";
 import "./globals.css";
 import Disclaimer from "@/components/Disclaimer";
+import SiteHeader from "@/components/SiteHeader";
 
 /*
  * 본문은 IBM Plex Sans KR.
@@ -28,10 +29,21 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+/**
+ * 큰 제목 전용 명조. 행정문서 같은 딱딱함 대신 손편지 같은 온기를 준다.
+ * 본문에는 쓰지 않는다 — 작은 크기의 명조는 고령자에게 읽기 어렵다.
+ */
+const serifKr = Noto_Serif_KR({
+  variable: "--font-serif-kr",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "DUE — 복지 사각지대 내비게이터",
   description:
-    "내 상황을 말하면 받을 수 있는 제도를 전부 찾아주고, 받은 서류를 쉬운 말로 풀어주는 도구",
+    "상황을 알려주면 연락할 수 있는 공공·민간 기관까지 이어주고, 함께 신청할 수 있는 지원금을 찾아주는 도구",
 };
 
 export default function RootLayout({
@@ -42,9 +54,17 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${plexSansKr.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${plexSansKr.variable} ${plexMono.variable} ${serifKr.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pb-16">
+      <body className="relative min-h-full flex flex-col pb-16">
+        {/* 모든 화면 위쪽의 옅은 번짐. 첫 화면은 자기 히어로가 덮는다 */}
+        <div
+          aria-hidden
+          className="soft-glow pointer-events-none absolute inset-x-0 top-0 -z-10 h-[460px]"
+        />
+        <SiteHeader />
+        {/* 떠 있는 머리의 자리. 첫 화면 히어로는 이 자리까지 올라가 덮는다 */}
+        <div aria-hidden className="h-24" />
         {children}
         <Disclaimer />
       </body>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addressOf,
   buildInquiry,
+  bySector,
   checklistOf,
   hoursLabel,
   mapHref,
@@ -9,13 +10,14 @@ import {
   telHref,
 } from './facility';
 import { displayStatus } from './format';
-import type { Facility, UserContext } from '@/types';
+import type { Facility, FacilityMatch, UserContext } from '@/types';
 
 function facility(over: Partial<Facility> = {}): Facility {
   return {
     id: 'test',
     name: '관악구정신건강복지센터',
     type: 'MENTAL_HEALTH',
+    sector: 'PUBLIC',
     eligibility: {},
     coverage: { scope: 'SIGUNGU', sido: '서울특별시', sigungu: '관악구' },
     location: {
@@ -199,5 +201,28 @@ describe('displayStatus — 배제 조건 표시 뒤집기', () => {
   // 백엔드가 group 을 안 주는 옛 응답이 와도 화면이 깨지지 않아야 한다
   it('group 이 없으면 원래 상태를 쓴다', () => {
     expect(displayStatus({ status: 'FAIL' })).toBe('FAIL');
+  });
+});
+
+describe('bySector — 공공 · 민간 나누기', () => {
+  const m = (id: string, sector?: Facility['sector']): FacilityMatch => ({
+    facility: facility({ id, sector: sector as Facility['sector'] }),
+    status: 'ELIGIBLE',
+    conditions: [],
+    missingFields: [],
+  });
+
+  it('구역별로 나누고 백엔드 순서를 지킨다', () => {
+    const got = bySector([m('a', 'PUBLIC'), m('b', 'PRIVATE'), m('c', 'PUBLIC')]);
+    expect(got.PUBLIC.map((x) => x.facility.id)).toEqual(['a', 'c']);
+    expect(got.PRIVATE.map((x) => x.facility.id)).toEqual(['b']);
+    expect(got.unknown).toEqual([]);
+  });
+
+  // ★ 모르는 것을 공공으로 치면 "무료겠지" 하고 찾아간다
+  it('sector 가 없으면 공공으로 치지 않는다', () => {
+    const got = bySector([m('x', undefined)]);
+    expect(got.PUBLIC).toEqual([]);
+    expect(got.unknown.map((x) => x.facility.id)).toEqual(['x']);
   });
 });

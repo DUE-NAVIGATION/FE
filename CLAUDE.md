@@ -42,7 +42,7 @@ Next.js (App Router) · TypeScript · Tailwind v4 · Zustand(세션 한정) · V
 ## 구조
 
 ```
-/app          라우트
+/app          라우트 — `/` 소개 · `/start` 상황 입력 · `/result` 결과
 /components   UI
 /lib          api.ts 백엔드 호출 · facility.ts 시설 표기·문의 문구 · format.ts 표기·조사
 /types        index.ts — 백엔드 internal/model 의 거울
@@ -60,6 +60,15 @@ Next.js (App Router) · TypeScript · Tailwind v4 · Zustand(세션 한정) · V
 ## 디자인 원칙
 
 - 복지 서비스답게 **신뢰감 있고 차분하게**. 과한 애니메이션 금지
+- 2026-09-11 — 톤을 따뜻하게 바꿨다. 크림 바탕 + 살구·햇살 그라데이션(`hero-glow` `soft-glow`).
+  **행동(버튼·링크)은 남색 하나**, 살구색(`warm`)은 장식과 "민간" 표식에만 쓴다.
+  초록·주황·붉은색은 판정 상태 기호이므로 장식에 쓰지 않는다
+- 큰 제목만 명조(`font-serif`, Noto Serif KR). 본문은 Plex 그대로 — 작은 명조는 고령자에게 읽기 어렵다
+- 카드는 이중 테두리(`.bezel` 껍데기 + `.bezel-core` 속 판), 주 버튼은 알약 + 화살표 원(`CtaLink`).
+  움직임 곡선은 `cubic-bezier(0.32,0.72,0,1)` 하나. 스크롤 떠오르기(`Reveal`)는 **첫 화면에서만**,
+  움직임 줄이기 설정이면 꺼진다. 흐림(backdrop-blur)은 고정 머리에만 쓴다
+- 결과 화면의 시설은 **공공 / 민간 구역으로 나누고 구분선**을 둔다 (`sector`, 설치 주체 기준).
+  sector 가 없는 시설을 공공으로 치지 않는다 — 따로 모아 "확인하지 못한 곳"으로 보여준다
 - 글자 크게(기본 18px), 명도대비 충분히 — **고령자도 사용자다**
 - 다크모드 자동 전환을 쓰지 않는다. 프로젝터는 대비가 낮게 나오고,
   시연 노트북 설정에 따라 화면이 바뀌면 데모가 위험하다

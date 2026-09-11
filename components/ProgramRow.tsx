@@ -121,7 +121,7 @@ export default function ProgramRow({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={panelId}
-          className="rounded-[3px] border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors hover:bg-brand-weak"
+          className="rounded-xl border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors hover:bg-brand-weak"
         >
           {open ? '근거 접기' : `왜 이렇게 판정됐나요 (조건 ${conditions.length}개)`}
         </button>
@@ -143,7 +143,7 @@ export default function ProgramRow({
 
           {/* 작성자가 표현하지 못한 요건을 숨기지 않는다. 심사에서 물어본다 */}
           {program.source.note && (
-            <p className="mt-3 rounded-[3px] border border-dashed border-border px-4 py-3 text-[0.84rem] leading-relaxed text-muted">
+            <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-3 text-[0.84rem] leading-relaxed text-muted">
               <span className="mb-1 block font-mono text-[0.68rem] tracking-[0.14em] text-faint">
                 출처 · 개정 {program.source.revisedAt}
               </span>

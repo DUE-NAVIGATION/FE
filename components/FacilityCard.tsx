@@ -22,6 +22,7 @@ import {
   hoursLabel,
   mailtoHref,
   mapHref,
+  SECTOR_INFO,
   smsHref,
   telHref,
 } from '@/lib/facility';
@@ -57,17 +58,22 @@ export default function FacilityCard({
 
   return (
     <article
-      className={`row-rise rounded-[4px] border bg-card ${
-        outOfScope ? 'border-border-soft' : 'border-border shadow-sm'
-      }`}
+      className={`row-rise bezel ${outOfScope ? 'opacity-80' : ''}`}
       style={{ '--i': index } as React.CSSProperties}
     >
+      <div className="bezel-core overflow-hidden">
       <div className={`p-5 sm:p-6 ${outOfScope ? 'opacity-70' : ''}`}>
         {/* ── 머리 ── */}
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
           <span className="font-mono text-[0.68rem] tracking-[0.12em] text-faint">
             {facilityTypeLabel(f.type)}
           </span>
+          {(f.sector === 'PUBLIC' || f.sector === 'PRIVATE') && (
+            <Pill
+              tone={f.sector === 'PUBLIC' ? 'public' : 'private'}
+              label={SECTOR_INFO[f.sector].label}
+            />
+          )}
           <StatusPill status={status} />
           {f.contact.always && !outOfScope && (
             <Pill tone="pass" label="24시간" />
@@ -91,7 +97,7 @@ export default function FacilityCard({
             {f.contact.phone && (
               <a
                 href={telHref(f.contact.phone)}
-                className="inline-flex w-full items-center justify-center gap-2.5 rounded-[3px] bg-brand px-6 py-4 text-[1.05rem] font-semibold text-white transition-colors hover:bg-brand-strong active:translate-y-px sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-brand px-6 py-4 text-[1.05rem] font-semibold text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98] sm:w-auto"
               >
                 <PhoneIcon />
                 <span className="tabular">{f.contact.phone}</span>
@@ -105,7 +111,7 @@ export default function FacilityCard({
                   href={map}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="rounded-[3px] border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+                  className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
                 >
                   지도로 보기
                 </a>
@@ -115,7 +121,7 @@ export default function FacilityCard({
                   href={f.contact.applyUrl}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="rounded-[3px] border border-brand px-3.5 py-2 text-[0.86rem] font-medium text-brand transition-colors hover:bg-brand-weak"
+                  className="rounded-xl border border-brand px-3.5 py-2 text-[0.86rem] font-medium text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
                 >
                   온라인 신청
                 </a>
@@ -125,7 +131,7 @@ export default function FacilityCard({
                   href={f.contact.website}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="rounded-[3px] border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+                  className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
                 >
                   홈페이지
                 </a>
@@ -133,7 +139,7 @@ export default function FacilityCard({
             </div>
           </div>
         ) : (
-          <p className="mt-4 rounded-[3px] border-l-[3px] border-border bg-surface px-4 py-3 text-[0.88rem] text-muted">
+          <p className="mt-4 rounded-xl border-l-[3px] border-border bg-surface px-4 py-3 text-[0.88rem] text-muted">
             {reason || '관할 지역이 아닙니다.'}
             {f.coverage.note && (
               <span className="mt-1 block text-faint">{f.coverage.note}</span>
@@ -147,6 +153,11 @@ export default function FacilityCard({
             {address && (
               <Row label="주소">
                 <span>{address}</span>
+              </Row>
+            )}
+            {f.operator && (
+              <Row label="운영">
+                <span>{f.operator}</span>
               </Row>
             )}
             <Row label="운영시간">
@@ -173,7 +184,7 @@ export default function FacilityCard({
 
         {/* ── 확인필요: 무엇을 알려주면 되는지 ── */}
         {status === 'NEEDS_INFO' && missingFields.length > 0 && (
-          <p className="mt-4 rounded-[3px] border-l-[3px] border-unknown bg-unknown-weak px-4 py-3 text-[0.89rem] text-muted">
+          <p className="mt-4 rounded-xl border-l-[3px] border-unknown bg-unknown-weak px-4 py-3 text-[0.89rem] text-muted">
             <strong className="font-semibold text-unknown">
               {fieldListWithJosa(missingFields, '을', '를')} 알려주시면
             </strong>{' '}
@@ -189,7 +200,7 @@ export default function FacilityCard({
             onClick={() => toggle('why')}
             aria-expanded={openPanel === 'why'}
             aria-controls={panelId}
-            className="rounded-[3px] border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors hover:bg-brand-weak"
+            className="rounded-xl border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
           >
             {openPanel === 'why' ? '근거 접기' : '왜 이렇게 판정됐나요'}
           </button>
@@ -199,7 +210,7 @@ export default function FacilityCard({
               onClick={() => toggle('prep')}
               aria-expanded={openPanel === 'prep'}
               aria-controls={panelId}
-              className="rounded-[3px] border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors hover:bg-brand-weak"
+              className="rounded-xl border border-border px-3 py-1.5 text-[0.84rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
             >
               {openPanel === 'prep' ? '접기' : '전화하기 전에 볼 것'}
             </button>
@@ -213,7 +224,7 @@ export default function FacilityCard({
             <>
               <EvidenceTable conditions={conditions} />
               {f.source.note && (
-                <p className="mt-3 rounded-[3px] border border-dashed border-border px-4 py-3 text-[0.83rem] leading-relaxed text-muted">
+                <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-3 text-[0.83rem] leading-relaxed text-muted">
                   <span className="mb-1 block font-mono text-[0.68rem] tracking-[0.14em] text-faint">
                     출처 {f.source.agency ?? ''} · 기준 {f.source.revisedAt}
                   </span>
@@ -225,6 +236,7 @@ export default function FacilityCard({
           {openPanel === 'prep' && <PrepPanel match={match} inquiry={inquiry} />}
         </div>
       )}
+      </div>
     </article>
   );
 }
@@ -307,7 +319,7 @@ function PrepPanel({
           </span>
         </div>
 
-        <pre className="mt-2 overflow-x-auto rounded-[3px] border border-border bg-card px-4 py-3.5 font-sans text-[0.89rem] leading-relaxed whitespace-pre-wrap text-foreground">
+        <pre className="mt-2 overflow-x-auto rounded-xl border border-border bg-card px-4 py-3.5 font-sans text-[0.89rem] leading-relaxed whitespace-pre-wrap text-foreground">
           {inquiry.body}
         </pre>
 
@@ -315,14 +327,14 @@ function PrepPanel({
           <button
             type="button"
             onClick={copy}
-            className="rounded-[3px] border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+            className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
           >
             {copied ? '복사했습니다' : '문구 복사'}
           </button>
           {f.contact.phone && (
             <a
               href={smsHref(f.contact.phone, inquiry.body)}
-              className="rounded-[3px] border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+              className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
             >
               문자로 보내기
             </a>
@@ -330,7 +342,7 @@ function PrepPanel({
           {f.contact.email && (
             <a
               href={mailtoHref(f.contact.email, inquiry.subject, inquiry.body)}
-              className="rounded-[3px] border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+              className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
             >
               메일로 보내기
             </a>

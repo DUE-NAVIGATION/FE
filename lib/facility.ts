@@ -11,7 +11,9 @@
 import type {
   Facility,
   FacilityContact,
+  FacilityMatch,
   FacilityType,
+  Sector,
   UserContext,
 } from '@/types';
 import { fieldLabel, josa } from '@/lib/format';
@@ -34,6 +36,47 @@ const TYPE_LABEL: Record<FacilityType, string> = {
 
 export function facilityTypeLabel(t: FacilityType): string {
   return TYPE_LABEL[t] ?? '시설';
+}
+
+/** 공공 · 민간 — 결과 화면 구역의 이름과 한 줄 설명 */
+export const SECTOR_INFO: Record<
+  Sector,
+  { label: string; title: string; note: string }
+> = {
+  PUBLIC: {
+    label: '공공',
+    title: '공공 기관',
+    note: '나라와 지자체가 세운 곳입니다. 대부분 무료이고, 관할 지역에 사시면 이용하실 수 있습니다.',
+  },
+  PRIVATE: {
+    label: '민간',
+    title: '민간 기관',
+    note: '사회복지법인·단체가 운영하는 곳입니다. 이용료나 정원이 있을 수 있어 전화로 먼저 확인해 주세요.',
+  },
+};
+
+/**
+ * 시설을 공공 · 민간으로 나눈다. 순서는 백엔드가 준 그대로 둔다.
+ *
+ * ★ sector 가 없는 시설을 공공으로 치지 않는다. 모르는 것은 모른다고 따로 둔다
+ *   (옛 응답이거나 데이터 오류다). 공공이라고 보여주면 "무료겠지" 하고 찾아간다.
+ */
+export function bySector(matches: FacilityMatch[]): {
+  PUBLIC: FacilityMatch[];
+  PRIVATE: FacilityMatch[];
+  unknown: FacilityMatch[];
+} {
+  const out = {
+    PUBLIC: [] as FacilityMatch[],
+    PRIVATE: [] as FacilityMatch[],
+    unknown: [] as FacilityMatch[],
+  };
+  for (const m of matches) {
+    const s = m.facility.sector;
+    if (s === 'PUBLIC' || s === 'PRIVATE') out[s].push(m);
+    else out.unknown.push(m);
+  }
+  return out;
 }
 
 /** 전화 걸기. 번호에서 하이픈·공백을 떼야 일부 기기에서 제대로 걸린다 */

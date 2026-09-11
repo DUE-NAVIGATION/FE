@@ -304,6 +304,12 @@ export type FacilityType =
   | 'COMMUNITY_CENTER' // 행정복지센터(주민센터)
   | 'OTHER';
 
+/**
+ * 공공 / 민간. ★ 설치 주체 기준이다 — 구청이 세우고 법인에 위탁했으면 PUBLIC.
+ * 결과 화면이 이 값으로 구역을 나눈다
+ */
+export type Sector = 'PUBLIC' | 'PRIVATE';
+
 /** 관할 범위. 시설 판정의 1순위 조건이다 */
 export type CoverageScope = 'NATIONWIDE' | 'SIDO' | 'SIGUNGU';
 
@@ -350,6 +356,9 @@ export interface Facility {
   id: string;
   name: string;
   type: FacilityType;
+  sector: Sector;
+  /** 실제 운영 주체(위탁 법인 등). 확인되지 않으면 없다 */
+  operator?: string;
   summary?: string;
   /** 제도와 같은 구조. 규칙 엔진도 같은 것을 쓴다 */
   eligibility: Eligibility;
@@ -466,6 +475,7 @@ export interface HealthResponse {
   /** 항상 false. 설계 원칙 2를 서버가 직접 밝힌다 */
   storesUserData: boolean;
   programCount: number;
+  facilityCount: number;
   medianIncomeYear: number;
   /** false 면 첫 화면부터 직접 입력 폼을 띄운다 */
   aiEnabled: boolean;

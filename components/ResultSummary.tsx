@@ -42,7 +42,7 @@ export default function ResultSummary({
       </div>
 
       <div
-        className="mt-4 flex h-[9px] overflow-hidden rounded-[2px] bg-surface"
+        className="mt-4 flex h-[9px] overflow-hidden rounded-md bg-surface"
         role="img"
         aria-label={`해당 ${eligibleCount}건, 확인필요 ${needsInfoCount}건, 미해당 ${ineligibleCount}건`}
       >
@@ -66,7 +66,7 @@ export default function ResultSummary({
 
       {/* 중복수급으로 빠진 제도가 있으면 반드시 밝힌다. 조용히 사라지면 안 된다 */}
       {summary.excludedByConflict && summary.excludedByConflict.length > 0 && (
-        <p className="mt-3 rounded-[3px] border-l-[3px] border-unknown bg-unknown-weak px-4 py-3 text-[0.87rem] text-muted">
+        <p className="mt-3 rounded-xl border-l-[3px] border-unknown bg-unknown-weak px-4 py-3 text-[0.87rem] text-muted">
           동시에 받을 수 없는 제도가 있어{' '}
           <strong className="font-semibold text-unknown">
             {summary.excludedByConflict.length}건
@@ -88,7 +88,7 @@ export default function ResultSummary({
 function Key({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <i aria-hidden className={`block size-[9px] rounded-[2px] ${color}`} />
+      <i aria-hidden className={`block size-[9px] rounded-md ${color}`} />
       {label}
     </span>
   );

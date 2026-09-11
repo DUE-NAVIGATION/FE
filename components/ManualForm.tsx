@@ -246,7 +246,7 @@ function Shell({
 }
 
 const INPUT =
-  'w-full rounded-[3px] border border-border bg-card px-3.5 py-2.5 text-[0.95rem] text-foreground placeholder:text-faint focus-visible:border-brand focus-visible:outline-offset-0';
+  'w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-[0.95rem] text-foreground placeholder:text-faint focus-visible:border-brand focus-visible:outline-offset-0';
 
 function NumberField({
   label,
