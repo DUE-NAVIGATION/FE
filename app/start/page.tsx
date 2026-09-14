@@ -34,6 +34,8 @@ const SANITIZE_LABEL: Record<SanitizeKind, string> = {
 
 type Backend =
   | { kind: 'checking' }
+  // 무료 서버(Render)가 잠에서 깨는 중. 첫 요청에 1분 가까이 걸린다
+  | { kind: 'waking' }
   | {
       kind: 'up';
       aiEnabled: boolean;
@@ -55,27 +57,45 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   // 서버 상태로 입력 방식을 정한다. AI 가 없으면 처음부터 직접 입력을 연다.
+  //
+  // ★ 배포 서버는 무료 플랜이라 15분 쉬면 잠든다. 깨는 데 1분 가까이 걸리는데,
+  //   한 번 실패했다고 "백엔드 없음" 으로 굳히면 심사위원은 고장으로 본다.
+  //   그래서 몇 번 더 두드린다 (약 1분). 그래도 안 되면 그때 없다고 말한다.
   useEffect(() => {
     let alive = true;
-    getHealth()
-      .then((h) => {
-        if (!alive) return;
-        setBackend({
-          kind: 'up',
-          aiEnabled: h.aiEnabled,
-          programCount: h.programCount,
-          facilityCount: h.facilityCount,
-          year: h.medianIncomeYear,
+    let tries = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const check = () => {
+      getHealth()
+        .then((h) => {
+          if (!alive) return;
+          setBackend({
+            kind: 'up',
+            aiEnabled: h.aiEnabled,
+            programCount: h.programCount,
+            facilityCount: h.facilityCount,
+            year: h.medianIncomeYear,
+          });
+          if (!h.aiEnabled) setManual(true);
+        })
+        .catch((e: ApiError) => {
+          if (!alive) return;
+          setManual(true);
+          tries += 1;
+          if (tries < 6) {
+            setBackend({ kind: 'waking' });
+            timer = setTimeout(check, 3000);
+          } else {
+            setBackend({ kind: 'down', message: e.message });
+          }
         });
-        if (!h.aiEnabled) setManual(true);
-      })
-      .catch((e: ApiError) => {
-        if (!alive) return;
-        setBackend({ kind: 'down', message: e.message });
-        setManual(true);
-      });
+    };
+    check();
+
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
@@ -259,7 +279,7 @@ export default function Home() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  disabled={busy !== null || backend.kind === 'down'}
+                  disabled={busy !== null || backend.kind !== 'up'}
                   onClick={runEvaluate}
                   className="rounded-full bg-brand px-6 py-3 text-[0.95rem] font-medium text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -301,12 +321,20 @@ function ServerLine({ backend }: { backend: Backend }) {
     );
   }
 
+  if (backend.kind === 'waking') {
+    return (
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-[0.84rem] text-muted">
+        <Pill tone="unknown" label="서버를 깨우는 중" />
+        무료 서버라 처음 한 번은 1분쯤 걸립니다. 잠시만 기다려 주세요.
+      </p>
+    );
+  }
+
   if (backend.kind === 'down') {
     return (
       <p className="mt-1 flex flex-wrap items-center gap-2 text-[0.84rem] text-muted">
-        <Pill tone="fail" label="백엔드 없음" />
-        {backend.message} — <code className="font-mono">api</code> 폴더에서{' '}
-        <code className="font-mono">go run ./cmd/server</code> 를 실행하세요.
+        <Pill tone="fail" label="서버 연결 안 됨" />
+        {backend.message} 잠시 뒤 새로고침해 주세요.
       </p>
     );
   }
