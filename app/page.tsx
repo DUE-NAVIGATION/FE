@@ -24,7 +24,9 @@ const PROMISES = [
 
 export default function Landing() {
   return (
-    <main className="flex flex-col">
+    // overflow-x-clip: 히어로의 기울인 카드·번짐 장식이 좁은 화면에서 옆으로 삐져나와
+    // 페이지가 가로로 밀리는 것을 막는다 (390px 에서 408px 로 넘쳤다)
+    <main className="flex flex-col overflow-x-clip">
       {/* ══ 히어로 — 좌우 분할 ═════════════════════════════ */}
       <section className="hero-glow -mt-24 px-4 pt-36 pb-24 md:px-5 md:pt-44 md:pb-36">
         <div className="mx-auto grid w-full max-w-[1180px] items-center gap-16 lg:grid-cols-[1.15fr_1fr]">

@@ -56,7 +56,7 @@ export default function RootLayout({
       lang="ko"
       className={`${plexSansKr.variable} ${plexMono.variable} ${serifKr.variable} h-full antialiased`}
     >
-      <body className="relative min-h-full flex flex-col pb-16">
+      <body className="relative min-h-full flex flex-col pb-24 sm:pb-16">
         {/* 모든 화면 위쪽의 옅은 번짐. 첫 화면은 자기 히어로가 덮는다 */}
         <div
           aria-hidden
