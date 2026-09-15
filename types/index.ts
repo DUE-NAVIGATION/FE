@@ -98,6 +98,8 @@ export interface UserContext {
    *   안내가 헛걸음이 된다. 모르면 관할이 FAIL 이 아니라 UNKNOWN 이 된다.
    */
   district?: string;
+  /** 지금 안전이 걱정되는 신호. 없으면 말하지 않은 것 */
+  crisisSignals?: CrisisSignal[];
   /** 기초생활수급 자격 구분 */
   basicLivelihoodType?: BasicLivelihoodType;
   /**
@@ -310,6 +312,13 @@ export type FacilityType =
  */
 export type Sector = 'PUBLIC' | 'PRIVATE';
 
+/**
+ * 지금 안전이 걱정되는 신호. 백엔드 model/crisis.go 의 거울.
+ * ★ 판정에 쓰지 않는다. 지금 바로 이야기할 수 있는 곳을 맨 위로 올리는 데만 쓴다.
+ *   가장 민감한 입력이라 문의 문구에도 넣지 않는다
+ */
+export type CrisisSignal = 'SELF_HARM' | 'VIOLENCE';
+
 /** 관할 범위. 시설 판정의 1순위 조건이다 */
 export type CoverageScope = 'NATIONWIDE' | 'SIDO' | 'SIGUNGU';
 
@@ -359,6 +368,8 @@ export interface Facility {
   sector: Sector;
   /** 실제 운영 주체(위탁 법인 등). 확인되지 않으면 없다 */
   operator?: string;
+  /** 이 기관이 응답하는 위기 신호 */
+  crisis?: CrisisSignal[];
   summary?: string;
   /** 제도와 같은 구조. 규칙 엔진도 같은 것을 쓴다 */
   eligibility: Eligibility;
@@ -383,6 +394,8 @@ export interface FacilityMatch {
   /** ★ 첫 줄은 항상 관할 지역이다 */
   conditions: ConditionResult[];
   missingFields: string[];
+  /** 사용자의 위기 신호에 응답하는 곳. 결과 맨 위에 따로 보인다 */
+  urgent?: boolean;
 }
 
 export interface FacilitySummary {

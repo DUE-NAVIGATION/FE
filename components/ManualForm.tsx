@@ -223,6 +223,26 @@ export default function ManualForm({
           onChange={(v) => onChange({ isPregnant: choiceToBool(v) })}
         />
       </Group>
+
+      {/*
+        ★ 가장 민감한 질문이라 선택으로 두고, 판정에는 쓰지 않는다.
+          고르면 결과 맨 위에 지금 바로 이야기할 수 있는 곳이 먼저 보인다
+      */}
+      <Group title="지금 안전이 걱정되시나요 (선택)">
+        <ChoiceField
+          label="해당하는 것이 있으면 골라 주세요"
+          value={value.crisisSignals?.[0] ?? ''}
+          options={[
+            ['SELF_HARM', '스스로를 해치고 싶은 마음이 들어요'],
+            ['VIOLENCE', '누군가에게 폭력을 당하고 있어요'],
+          ]}
+          onChange={(v) =>
+            onChange({
+              crisisSignals: (v ? [v] : undefined) as UserContext['crisisSignals'],
+            })
+          }
+        />
+      </Group>
     </div>
   );
 }

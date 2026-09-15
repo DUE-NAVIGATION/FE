@@ -20,7 +20,7 @@ import Link from 'next/link';
 import type { FacilityMatch, MatchResult, MatchStatus, Sector } from '@/types';
 import { ApiError, explain } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import { bySector, SECTOR_INFO } from '@/lib/facility';
+import { bySector, hoursLabel, SECTOR_INFO, telHref } from '@/lib/facility';
 import FacilityCard from '@/components/FacilityCard';
 import ProgramRow from '@/components/ProgramRow';
 import ResultSummary from '@/components/ResultSummary';
@@ -158,6 +158,9 @@ export default function ResultPage() {
         )}
       </header>
 
+      {/* 위기 신호가 있으면 무엇보다 먼저 */}
+      <UrgentLines matches={facilities.filter((f) => f.urgent)} />
+
       {/* AI 설명문. 없어도 이 화면은 완전히 동작한다 */}
       {writing && !explanation && (
         <div className="mt-7 flex flex-col gap-2 rounded-xl border-l-[3px] border-border bg-surface px-5 py-4">
@@ -257,6 +260,58 @@ export default function ResultPage() {
         공유 링크는 만들지 않습니다. 저장은 이 기기에만 남습니다.
       </p>
     </main>
+  );
+}
+
+// ── 지금 바로 이야기할 수 있는 곳 ─────────────────────────────
+
+/**
+ * 위기 신호(스스로를 해치고 싶은 마음 · 폭력 피해)가 있을 때 맨 위에 두는 상자.
+ *
+ * ★ 무엇을 띄울지는 백엔드 규칙이 정한다(시설 JSON 의 crisis). 여기서 번호를 고르지 않는다.
+ * ★ 판정 상태 색(빨강·주황)을 쓰지 않는다. 겁주지 않고, 차분하게 번호만 크게 보인다.
+ */
+function UrgentLines({ matches }: { matches: FacilityMatch[] }) {
+  if (matches.length === 0) return null;
+  return (
+    <section
+      aria-label="지금 바로 이야기할 수 있는 곳"
+      className="mt-8 rounded-3xl border border-brand/20 bg-brand-weak p-6 sm:p-7"
+    >
+      <h2 className="font-serif text-[1.3rem] font-bold tracking-[-0.02em]">
+        지금 바로 이야기할 수 있는 곳이 있습니다
+      </h2>
+      <p className="mt-1.5 text-[0.95rem] text-muted">
+        혼자 견디지 않으셔도 됩니다. 아래 번호로 전화하시면 상담원과 이야기할 수 있습니다.
+      </p>
+      <ul className="mt-5 flex flex-col gap-3">
+        {matches.map((m) => {
+          const f = m.facility;
+          const hours = hoursLabel(f.contact);
+          return (
+            <li
+              key={f.id}
+              className="flex flex-col gap-3 rounded-2xl bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="text-[1.02rem] font-semibold">{f.name}</p>
+                <p className={`text-[0.85rem] ${hours.known ? 'text-muted' : 'text-faint'}`}>
+                  {hours.text}
+                </p>
+              </div>
+              {f.contact.phone && (
+                <a
+                  href={telHref(f.contact.phone)}
+                  className="rounded-full bg-brand px-6 py-3 text-center text-[1rem] font-semibold text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-strong active:scale-[0.98]"
+                >
+                  <span className="tabular">{f.contact.phone}</span> 로 전화
+                </a>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
