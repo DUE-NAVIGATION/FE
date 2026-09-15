@@ -168,7 +168,7 @@ export default function ResultPage() {
         )}
 
         {reachableAll.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="no-print mt-2 flex flex-wrap gap-2">
             {SECTORS.map((sector) => (
               <a
                 key={sector}
@@ -199,7 +199,7 @@ export default function ResultPage() {
           <div
             role="group"
             aria-label="기관 종류로 걸러 보기"
-            className="mt-1 flex flex-wrap items-center gap-2"
+            className="no-print mt-1 flex flex-wrap items-center gap-2"
           >
             <span className="text-[0.8rem] text-faint">종류</span>
             {typeOptions.map(([t, label, n]) => (
@@ -308,7 +308,7 @@ export default function ResultPage() {
         </span>
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      <div className="no-print mt-6 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={() => window.print()}
@@ -542,7 +542,7 @@ function FacilityGroup({
         <button
           type="button"
           onClick={() => setShown((n) => n + PAGE_STEP)}
-          className="mt-4 w-full rounded-full border border-border bg-card py-3 text-[0.92rem] font-medium text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
+          className="no-print mt-4 w-full rounded-full border border-border bg-card py-3 text-[0.92rem] font-medium text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
         >
           {Math.min(PAGE_STEP, rest)}곳 더 보기{' '}
           <span className="font-normal text-faint">(남은 {rest}곳)</span>
@@ -571,7 +571,7 @@ function OutOfScope({
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="mt-10">
+    <section className="no-print mt-10">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

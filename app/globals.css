@@ -77,6 +77,11 @@ html {
   font-size: 18px; /* 기본 16px → 18px */
 }
 
+/* 글자 크게 보기 (TextSizeToggle). 화면 전체가 rem 기준이라 버튼·여백도 함께 커진다 */
+html[data-size="large"] {
+  font-size: 21px;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -221,6 +226,14 @@ body::before {
   }
   .no-print {
     display: none !important;
+  }
+  /* 종이에는 떠 있는 머리·고정 고지 대신 본문만. 고지는 결과 화면 안에도 있다 */
+  header.fixed,
+  footer.fixed {
+    display: none !important;
+  }
+  html {
+    font-size: 15px;
   }
   .reveal {
     opacity: 1 !important;

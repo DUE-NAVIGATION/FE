@@ -29,6 +29,7 @@ import {
 import { fieldListWithJosa } from '@/lib/format';
 import { Pill, StatusPill } from '@/components/StatusPill';
 import EvidenceTable from '@/components/EvidenceTable';
+import ReadAloud from '@/components/ReadAloud';
 
 export default function FacilityCard({
   match,
@@ -194,7 +195,7 @@ export default function FacilityCard({
         )}
 
         {/* ── 더 보기 ── */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="no-print mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => toggle('why')}
@@ -331,6 +332,10 @@ function PrepPanel({
           >
             {copied ? '복사했습니다' : '문구 복사'}
           </button>
+          <ReadAloud
+            text={inquiry.body}
+            className="rounded-xl border border-border px-3.5 py-2 text-[0.86rem] text-brand transition-colors hover:bg-brand-weak"
+          />
           {f.contact.phone && (
             <a
               href={smsHref(f.contact.phone, inquiry.body)}

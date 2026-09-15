@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import TextSizeToggle from '@/components/TextSizeToggle';
 
 /**
  * 모든 화면 위에 떠 있는 섬 모양 머리.
@@ -19,6 +20,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-1">
+          <TextSizeToggle />
           <a
             href="tel:129"
             className="hidden rounded-full px-3.5 py-2 text-[0.82rem] text-muted transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[rgba(120,80,45,0.06)] sm:inline-flex"
