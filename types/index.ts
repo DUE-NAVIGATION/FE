@@ -394,6 +394,19 @@ export interface FacilitySummary {
   reachableNow: number;
 }
 
+/**
+ * GET /api/regions — 시·군·구 선택 목록. 백엔드 handler/regions.go 의 거울.
+ * 시군구가 빈 배열이면 시도 전체가 관할이다 (세종특별자치시).
+ */
+export interface Region {
+  sido: string;
+  sigungu: string[];
+}
+
+export interface RegionsResponse {
+  regions: Region[];
+}
+
 /** GET /api/facilities */
 export interface FacilitiesResponse {
   facilities: Facility[];

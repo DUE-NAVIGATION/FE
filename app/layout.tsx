@@ -41,6 +41,8 @@ const serifKr = Noto_Serif_KR({
 });
 
 export const metadata: Metadata = {
+  // 공유 미리보기(opengraph-image.png)의 절대 주소를 만드는 기준. 프로덕션 도메인이다
+  metadataBase: new URL("https://due-navigation.vercel.app"),
   title: "DUE — 복지 사각지대 내비게이터",
   description:
     "상황을 알려주면 연락할 수 있는 공공·민간 기관까지 이어주고, 함께 신청할 수 있는 지원금을 찾아주는 도구",

@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ApiError, evaluate, extract, getHealth } from '@/lib/api';
+import { ApiError, evaluate, extract, getHealth, getRegions } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { fieldLabel } from '@/lib/format';
 import ManualForm from '@/components/ManualForm';
@@ -53,6 +53,8 @@ export default function Home() {
   const [backend, setBackend] = useState<Backend>({ kind: 'checking' });
   const [text, setText] = useState('');
   const [manual, setManual] = useState(false);
+  // 시도 → 시군구 선택 목록. 못 받으면 비워 두고 직접 입력으로 간다
+  const [districts, setDistricts] = useState<Record<string, string[]>>();
   const [busy, setBusy] = useState<'extract' | 'evaluate' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +80,14 @@ export default function Home() {
             year: h.medianIncomeYear,
           });
           if (!h.aiEnabled) setManual(true);
+          getRegions()
+            .then((r) => {
+              if (!alive) return;
+              setDistricts(Object.fromEntries(r.regions.map((g) => [g.sido, g.sigungu])));
+            })
+            .catch(() => {
+              // 목록은 덤이다. 없으면 시군구를 직접 입력한다
+            });
         })
         .catch((e: ApiError) => {
           if (!alive) return;
@@ -268,7 +278,7 @@ export default function Home() {
                 </span>
               </div>
 
-              <ManualForm value={context} onChange={setContext} />
+              <ManualForm value={context} onChange={setContext} districts={districts} />
 
               {hasAnyInput && (
                 <p className="font-mono text-[0.74rem] text-faint">

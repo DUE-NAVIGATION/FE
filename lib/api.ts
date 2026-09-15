@@ -16,6 +16,7 @@ import type {
   ExtractResponse,
   HealthResponse,
   ProgramsResponse,
+  RegionsResponse,
   UserContext,
 } from '@/types';
 
@@ -111,6 +112,9 @@ export const getHealth = () => get<HealthResponse>('/healthz');
 
 /** 지금 서버가 읽고 있는 제도 목록. 데이터 작성 확인용 */
 export const getPrograms = () => get<ProgramsResponse>('/api/programs');
+
+/** 시·군·구 선택 목록. 실패해도 화면은 직접 입력으로 돌아간다 */
+export const getRegions = () => get<RegionsResponse>('/api/regions');
 
 /**
  * 판정. 이 서비스의 본체다.

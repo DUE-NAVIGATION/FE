@@ -75,10 +75,19 @@ const BASIC_LIVELIHOOD: Array<[BasicLivelihoodType, string]> = [
 export default function ManualForm({
   value,
   onChange,
+  districts,
 }: {
   value: UserContext;
   onChange: (patch: UserContext) => void;
+  /**
+   * 시도 → 시군구 목록 (GET /api/regions). 있으면 시군구를 목록에서 고르게 한다.
+   * ★ 자유 입력은 "수원" · "장안구" 처럼 데이터의 "수원시" 와 어긋나
+   *   갈 수 있는 곳이 전부 관할 밖으로 빠진다. 목록이 없을 때만 직접 입력한다
+   */
+  districts?: Record<string, string[]>;
 }) {
+  const districtOptions = value.region ? districts?.[value.region] : undefined;
+
   return (
     <div className="flex flex-col gap-7">
       <Group title="사시는 곳">
@@ -86,15 +95,25 @@ export default function ManualForm({
           label="시 · 도"
           value={value.region ?? ''}
           options={SIDO}
-          onChange={(v) => onChange({ region: v || undefined })}
+          // 시도가 바뀌면 시군구를 비운다. 다른 시도의 구가 남아 있으면 판정이 틀린다
+          onChange={(v) => onChange({ region: v || undefined, district: undefined })}
         />
-        <TextField
-          label="시 · 군 · 구"
-          hint="가까운 시설을 찾는 데 씁니다. 주소는 묻지 않습니다"
-          placeholder="예: 관악구"
-          value={value.district ?? ''}
-          onChange={(v) => onChange({ district: v.trim() || undefined })}
-        />
+        {districtOptions && districtOptions.length > 0 ? (
+          <ChoiceField
+            label="시 · 군 · 구"
+            value={value.district ?? ''}
+            options={districtOptions.map((d): [string, string] => [d, d])}
+            onChange={(v) => onChange({ district: v || undefined })}
+          />
+        ) : (
+          <TextField
+            label="시 · 군 · 구"
+            hint="가까운 시설을 찾는 데 씁니다. 주소는 묻지 않습니다"
+            placeholder="예: 관악구"
+            value={value.district ?? ''}
+            onChange={(v) => onChange({ district: v.trim() || undefined })}
+          />
+        )}
       </Group>
 
       <Group title="가구">

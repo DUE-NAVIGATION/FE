@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
 /**
@@ -36,20 +37,21 @@ export default function SiteHeader() {
   );
 }
 
-/** 길잡이 표식 — 두 점을 잇는 곡선. "당신과 시설을 잇는다" */
+/**
+ * 대표 로고 — 두 점을 잇는 곡선. "이용자와 기관을 잇는다".
+ * 원본은 저장소 밖 DUE_LOGO.png 이고, 여기 쓰는 것은 모서리를 투명하게 딴 128px 판이다.
+ * 파비콘(app/icon.png)과 공유 미리보기(app/opengraph-image.png)도 같은 원본에서 나왔다.
+ */
 function Logo() {
   return (
-    <svg aria-hidden width="30" height="30" viewBox="0 0 34 34" fill="none">
-      <defs>
-        <linearGradient id="due-logo" x1="0" y1="0" x2="34" y2="34">
-          <stop offset="0" stopColor="#f29a6c" />
-          <stop offset="1" stopColor="#1d5480" />
-        </linearGradient>
-      </defs>
-      <rect width="34" height="34" rx="17" fill="url(#due-logo)" />
-      <path d="M9.5 23.5c3-8 12-5 15-13" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="9.5" cy="23.5" r="2.3" fill="#fff" />
-      <circle cx="24.5" cy="10.5" r="2.3" fill="#fff" />
-    </svg>
+    <Image
+      src="/logo-mark.png"
+      alt=""
+      aria-hidden
+      width={30}
+      height={30}
+      priority
+      className="rounded-[9px]"
+    />
   );
 }
