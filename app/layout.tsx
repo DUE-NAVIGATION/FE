@@ -66,7 +66,7 @@ export default function RootLayout({
         />
         <SiteHeader />
         {/* 떠 있는 머리의 자리. 첫 화면 히어로는 이 자리까지 올라가 덮는다 */}
-        <div aria-hidden className="h-24" />
+        <div aria-hidden className="no-print h-24" />
         {children}
         <Disclaimer />
       </body>
