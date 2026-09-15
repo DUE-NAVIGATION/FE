@@ -17,10 +17,22 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { FacilityMatch, MatchResult, MatchStatus, Sector } from '@/types';
+import type {
+  FacilityMatch,
+  FacilityType,
+  MatchResult,
+  MatchStatus,
+  Sector,
+} from '@/types';
 import { ApiError, explain } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import { bySector, hoursLabel, SECTOR_INFO, telHref } from '@/lib/facility';
+import {
+  bySector,
+  facilityTypeLabel,
+  hoursLabel,
+  SECTOR_INFO,
+  telHref,
+} from '@/lib/facility';
 import FacilityCard from '@/components/FacilityCard';
 import ProgramRow from '@/components/ProgramRow';
 import ResultSummary from '@/components/ResultSummary';
@@ -57,6 +69,8 @@ export default function ResultPage() {
   const explanation = useSession((s) => s.explanation);
   const setExplanation = useSession((s) => s.setExplanation);
   const [writing, setWriting] = useState(false);
+  // 기관 종류로 걸러 보기. ★ 보여주기만 거른다 — 판정은 그대로다
+  const [typeFilter, setTypeFilter] = useState<FacilityType | 'ALL'>('ALL');
 
   // 같은 결과에 대해 두 번 부르지 않는다. AI 호출은 돈이 든다
   const asked = useRef(false);
@@ -99,7 +113,22 @@ export default function ResultPage() {
   const outOfScope = facilities.filter((f) => f.status === 'INELIGIBLE');
 
   // 연락할 수 있는 곳(이용 가능 + 확인 필요)을 공공 · 민간으로 나눈다
-  const reachable = [...available, ...needsInfo];
+  const reachableAll = [...available, ...needsInfo];
+  // 결과에 실제로 있는 종류만 칩으로 만든다. 많은 순
+  const typeCounts = new Map<FacilityType, number>();
+  for (const m of reachableAll) {
+    typeCounts.set(m.facility.type, (typeCounts.get(m.facility.type) ?? 0) + 1);
+  }
+  const typeOptions: Array<[FacilityType | 'ALL', string, number]> = [
+    ['ALL', '전체', reachableAll.length],
+    ...[...typeCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([t, n]): [FacilityType, string, number] => [t, facilityTypeLabel(t), n]),
+  ];
+  const reachable =
+    typeFilter === 'ALL'
+      ? reachableAll
+      : reachableAll.filter((m) => m.facility.type === typeFilter);
   const split = bySector(reachable);
 
   return (
@@ -138,7 +167,7 @@ export default function ResultPage() {
           </p>
         )}
 
-        {reachable.length > 0 && (
+        {reachableAll.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {SECTORS.map((sector) => (
               <a
@@ -153,6 +182,40 @@ export default function ResultPage() {
                 {SECTOR_INFO[sector].title}{' '}
                 <span className="tabular">{split[sector].length}곳</span>
               </a>
+            ))}
+            {/* 목록이 길어 아래 지원금이 묻히지 않게 바로 가는 길을 둔다 */}
+            {results.length > 0 && (
+              <a
+                href="#programs"
+                className="rounded-full bg-surface px-3.5 py-1.5 text-[0.84rem] font-medium text-muted transition-colors hover:bg-border-soft"
+              >
+                지원금 <span className="tabular">{results.length}건</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {typeOptions.length > 2 && (
+          <div
+            role="group"
+            aria-label="기관 종류로 걸러 보기"
+            className="mt-1 flex flex-wrap items-center gap-2"
+          >
+            <span className="text-[0.8rem] text-faint">종류</span>
+            {typeOptions.map(([t, label, n]) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={typeFilter === t}
+                onClick={() => setTypeFilter(t)}
+                className={`rounded-full px-3 py-1 text-[0.8rem] transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  typeFilter === t
+                    ? 'bg-foreground text-white'
+                    : 'bg-card text-muted ring-1 ring-border hover:bg-surface'
+                }`}
+              >
+                {label} <span className="tabular opacity-80">{n}</span>
+              </button>
             ))}
           </div>
         )}
@@ -184,6 +247,7 @@ export default function ResultPage() {
             sector={sector}
             first={i === 0}
             matches={split[sector]}
+            filtered={typeFilter !== 'ALL'}
             context={context}
           />
         ))}
@@ -207,7 +271,10 @@ export default function ResultPage() {
 
       {/* ══ 제도 — 부가 정보 ══════════════════════════════ */}
       {results.length > 0 && (
-        <section className="mt-20 rounded-[2rem] border border-border-soft bg-surface/60 p-6 md:p-10">
+        <section
+          id="programs"
+          className="mt-20 scroll-mt-24 rounded-[2rem] border border-border-soft bg-surface/60 p-6 md:p-10"
+        >
           <p className="text-[0.8rem] font-medium text-warm-strong">
             3단계 · 함께 신청할 수 있는 지원금
           </p>
@@ -329,11 +396,14 @@ function SectorSection({
   sector,
   first,
   matches,
+  filtered,
   context,
 }: {
   sector: Sector;
   first: boolean;
   matches: FacilityMatch[];
+  /** 종류 필터가 걸려 있다. 비었을 때 "아직 모으는 중" 이라고 말하면 틀린 말이 된다 */
+  filtered: boolean;
   context: Parameters<typeof FacilityCard>[0]['context'];
 }) {
   const info = SECTOR_INFO[sector];
@@ -387,9 +457,11 @@ function SectorSection({
 
       {matches.length === 0 ? (
         <p className="mt-4 rounded-2xl border border-dashed border-border px-5 py-5 text-[0.9rem] text-muted">
-          {isPublic
-            ? '사시는 지역에서 연락하실 수 있는 공공 기관을 아직 찾지 못했습니다.'
-            : '사시는 지역의 민간 기관 정보는 아직 모으는 중입니다.'}{' '}
+          {filtered
+            ? '고르신 종류의 기관은 이 구역에 없습니다.'
+            : isPublic
+              ? '사시는 지역에서 연락하실 수 있는 공공 기관을 아직 찾지 못했습니다.'
+              : '사시는 지역의 민간 기관 정보는 아직 모으는 중입니다.'}{' '}
           <span className="text-faint">
             위의 기관에 전화하시면 가까운 곳을 함께 안내받으실 수 있습니다.
           </span>
@@ -422,6 +494,10 @@ function SectorSection({
 
 // ── 시설 그룹 ───────────────────────────────────────────────
 
+/** 한 그룹에서 처음 보여줄 수와 "더 보기" 한 번에 늘리는 수 */
+const FIRST_PAGE = 5;
+const PAGE_STEP = 10;
+
 function FacilityGroup({
   title,
   note,
@@ -435,6 +511,12 @@ function FacilityGroup({
   matches: FacilityMatch[];
   context: Parameters<typeof FacilityCard>[0]['context'];
 }) {
+  // ★ 전국 데이터에서는 한 그룹에 60곳이 넘게 나온다. 한꺼번에 펼치면 모바일에서
+  //   화면 70장 분량이 되어 아래의 지원금은 아무도 못 본다. 처음엔 5곳만 보인다
+  const [shown, setShown] = useState(FIRST_PAGE);
+  const visible = matches.slice(0, shown);
+  const rest = matches.length - visible.length;
+
   return (
     <section>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border pt-8 pb-2">
@@ -446,15 +528,26 @@ function FacilityGroup({
       </div>
 
       <div className="mt-4 flex flex-col gap-4">
-        {matches.map((m, i) => (
+        {visible.map((m, i) => (
           <FacilityCard
             key={m.facility.id}
             match={m}
             context={context}
-            index={i}
+            index={i % PAGE_STEP}
           />
         ))}
       </div>
+
+      {rest > 0 && (
+        <button
+          type="button"
+          onClick={() => setShown((n) => n + PAGE_STEP)}
+          className="mt-4 w-full rounded-full border border-border bg-card py-3 text-[0.92rem] font-medium text-brand transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-brand-weak"
+        >
+          {Math.min(PAGE_STEP, rest)}곳 더 보기{' '}
+          <span className="font-normal text-faint">(남은 {rest}곳)</span>
+        </button>
+      )}
     </section>
   );
 }
@@ -462,10 +555,12 @@ function FacilityGroup({
 /**
  * 관할 밖 시설은 접어 둔다.
  *
- * 서울에서 자치구 시설을 판정하면 관할 밖이 24곳씩 나온다. 다 펼치면
- * 정작 갈 수 있는 곳이 묻힌다. 그래도 지우지는 않는다 —
- * "우리 동네 것만 나온 게 맞나" 를 확인할 수 있어야 하기 때문이다.
+ * 전국 데이터에서는 관할 밖이 2천 곳이 넘는다. 다 그리면 휴대폰이 멈춘다
+ * (2,185장 · 2.5초를 실제로 쟀다). 그래도 지우지는 않는다 —
+ * "우리 동네 것만 나온 게 맞나" 를 확인할 수 있어야 하기 때문이다. 펼쳐도 20곳까지만 그린다.
  */
+const OUT_OF_SCOPE_LIMIT = 20;
+
 function OutOfScope({
   matches,
   context,
@@ -495,16 +590,24 @@ function OutOfScope({
       </button>
 
       {open ? (
-        <div className="mt-4 flex flex-col gap-3">
-          {matches.map((m, i) => (
-            <FacilityCard
-              key={m.facility.id}
-              match={m}
-              context={context}
-              index={i}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-4 flex flex-col gap-3">
+            {matches.slice(0, OUT_OF_SCOPE_LIMIT).map((m, i) => (
+              <FacilityCard
+                key={m.facility.id}
+                match={m}
+                context={context}
+                index={i}
+              />
+            ))}
+          </div>
+          {matches.length > OUT_OF_SCOPE_LIMIT && (
+            <p className="mt-3 text-[0.86rem] text-faint">
+              그 외 {matches.length - OUT_OF_SCOPE_LIMIT}곳은 다른 지역의 기관이라 목록에서
+              생략했습니다.
+            </p>
+          )}
+        </>
       ) : (
         <p className="mt-3 text-[0.86rem] text-faint">
           사시는 지역의 관할이 아니어서 이용하실 수 없는 곳입니다. 이사하셨거나
