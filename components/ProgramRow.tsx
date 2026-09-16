@@ -79,7 +79,7 @@ export default function ProgramRow({
             </p>
           )}
 
-          <p className="mt-2 font-mono text-[0.72rem] text-faint">
+          <p className="mt-2 font-mono text-[0.78rem] text-faint">
             {[
               program.source.agency,
               program.apply.channel.map(channelLabel).join(' / '),
@@ -102,7 +102,7 @@ export default function ProgramRow({
           >
             {showAmount ? won(estimatedAmount) : '—'}
           </span>
-          <span className="block font-mono text-[0.74rem] text-faint">
+          <span className="block font-mono text-[0.78rem] text-faint">
             {showAmount
               ? status === 'NEEDS_INFO'
                 ? '해당 시 예상액'
@@ -144,7 +144,7 @@ export default function ProgramRow({
           {/* 작성자가 표현하지 못한 요건을 숨기지 않는다. 심사에서 물어본다 */}
           {program.source.note && (
             <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-3 text-[0.84rem] leading-relaxed text-muted">
-              <span className="mb-1 block font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+              <span className="mb-1 block font-mono text-[0.78rem] tracking-[0.14em] text-faint">
                 출처 · 개정 {program.source.revisedAt}
               </span>
               {program.source.note}

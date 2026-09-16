@@ -16,7 +16,7 @@ export default function SiteHeader() {
         <Link href="/" className="flex items-center gap-2 rounded-full pr-2">
           <Logo />
           <span className="font-serif text-[1.05rem] font-bold tracking-[-0.02em]">DUE</span>
-          <span className="hidden text-[0.72rem] text-faint md:inline">복지 사각지대 내비게이터</span>
+          <span className="hidden text-[0.78rem] text-faint md:inline">복지 사각지대 내비게이터</span>
         </Link>
 
         <nav className="flex items-center gap-1">

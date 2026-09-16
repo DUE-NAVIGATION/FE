@@ -281,7 +281,7 @@ export default function Home() {
               <ManualForm value={context} onChange={setContext} districts={districts} />
 
               {hasAnyInput && (
-                <p className="font-mono text-[0.74rem] text-faint">
+                <p className="font-mono text-[0.78rem] text-faint">
                   채워진 항목: {Object.keys(context).map(fieldLabel).join(' · ')}
                 </p>
               )}

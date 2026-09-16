@@ -258,7 +258,7 @@ function Group({
 }) {
   return (
     <fieldset className="flex flex-col gap-4">
-      <legend className="mb-2 w-full border-b border-border pb-1.5 font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+      <legend className="mb-2 w-full border-b border-border pb-1.5 font-mono text-[0.78rem] tracking-[0.14em] text-faint">
         {title}
       </legend>
       <div className="grid gap-4 sm:grid-cols-2">{children}</div>

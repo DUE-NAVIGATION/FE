@@ -148,7 +148,7 @@ export default function Landing() {
           <Reveal className="md:col-span-7">
             <div className="bezel h-full">
               <div className="bezel-core flex h-full flex-col gap-3 bg-gradient-to-br from-brand-weak to-white p-8 md:p-10">
-                <span className="w-fit rounded-full bg-brand px-3.5 py-1 text-[0.76rem] font-semibold text-white">공공</span>
+                <span className="w-fit rounded-full bg-brand px-3.5 py-1 text-[0.78rem] font-semibold text-white">공공</span>
                 <h3 className="mt-2 font-serif text-[1.6rem] font-bold tracking-[-0.03em]">나라와 지자체가 세운 곳</h3>
                 <p className="max-w-[40ch] text-[0.95rem] leading-relaxed text-muted">
                   대부분 무료이고, 관할 지역에 사시면 이용하실 수 있습니다. 운영을 민간에
@@ -160,7 +160,7 @@ export default function Landing() {
           <Reveal delay={1} className="md:col-span-5">
             <div className="bezel h-full">
               <div className="bezel-core flex h-full flex-col gap-3 bg-gradient-to-br from-warm-weak to-white p-8">
-                <span className="w-fit rounded-full bg-warm-strong px-3.5 py-1 text-[0.76rem] font-semibold text-white">민간</span>
+                <span className="w-fit rounded-full bg-warm-strong px-3.5 py-1 text-[0.78rem] font-semibold text-white">민간</span>
                 <h3 className="mt-2 font-serif text-[1.4rem] font-bold tracking-[-0.03em]">법인·단체가 운영하는 곳</h3>
                 <p className="text-[0.92rem] leading-relaxed text-muted">
                   이용료나 정원이 있을 수 있어 전화로 먼저 확인하시길 권합니다.
@@ -213,7 +213,7 @@ export default function Landing() {
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-[0.74rem] font-medium tracking-[0.08em] text-warm-strong ring-1 ring-warm/25">
+    <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/70 px-3.5 py-1.5 text-[0.78rem] font-medium tracking-[0.08em] text-warm-strong ring-1 ring-warm/25">
       <span aria-hidden className="block size-1.5 rounded-full bg-warm" />
       {children}
     </span>
@@ -253,7 +253,7 @@ function HeroCascade() {
       <div className="relative flex flex-col gap-4 md:gap-0">
         <div className="bezel md:ml-12 md:-rotate-2">
           <div className="bezel-core p-6">
-            <p className="text-[0.76rem] text-faint">알려주신 것</p>
+            <p className="text-[0.78rem] text-faint">알려주신 것</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {['사는 곳', '가족', '아이 나이', '일'].map((t) => (
                 <span key={t} className="rounded-full bg-surface px-3 py-1 text-[0.8rem] text-muted">
@@ -267,8 +267,8 @@ function HeroCascade() {
         <div className="bezel relative z-10 md:-mt-4 md:mr-8 md:rotate-1">
           <div className="bezel-core p-6">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-brand-weak px-2.5 py-0.5 text-[0.72rem] font-semibold text-brand">공공</span>
-              <span className="rounded-full bg-pass-weak px-2.5 py-0.5 text-[0.72rem] font-semibold text-pass">해당</span>
+              <span className="rounded-full bg-brand-weak px-2.5 py-0.5 text-[0.78rem] font-semibold text-brand">공공</span>
+              <span className="rounded-full bg-pass-weak px-2.5 py-0.5 text-[0.78rem] font-semibold text-pass">해당</span>
             </div>
             <div className="mt-4 h-3.5 w-[68%] rounded-full bg-foreground/80" />
             <div className="mt-2.5 h-2.5 w-[90%] rounded-full bg-border" />
@@ -286,9 +286,9 @@ function HeroCascade() {
 
         <div className="bezel md:-mt-3 md:ml-20 md:-rotate-1">
           <div className="bezel-core flex items-center gap-3 p-4">
-            <span className="rounded-full bg-warm-weak px-2.5 py-0.5 text-[0.72rem] font-semibold text-warm-strong">민간</span>
+            <span className="rounded-full bg-warm-weak px-2.5 py-0.5 text-[0.78rem] font-semibold text-warm-strong">민간</span>
             <div className="h-2.5 flex-1 rounded-full bg-border" />
-            <span className="text-[0.76rem] text-faint">준비물 · 할 말</span>
+            <span className="text-[0.78rem] text-faint">준비물 · 할 말</span>
           </div>
         </div>
       </div>

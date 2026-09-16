@@ -66,7 +66,7 @@ export default function FacilityCard({
       <div className={`p-5 sm:p-6 ${outOfScope ? 'opacity-70' : ''}`}>
         {/* ── 머리 ── */}
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-          <span className="font-mono text-[0.68rem] tracking-[0.12em] text-faint">
+          <span className="font-mono text-[0.78rem] tracking-[0.12em] text-faint">
             {facilityTypeLabel(f.type)}
           </span>
           {(f.sector === 'PUBLIC' || f.sector === 'PRIVATE') && (
@@ -226,7 +226,7 @@ export default function FacilityCard({
               <EvidenceTable conditions={conditions} />
               {f.source.note && (
                 <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-3 text-[0.83rem] leading-relaxed text-muted">
-                  <span className="mb-1 block font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+                  <span className="mb-1 block font-mono text-[0.78rem] tracking-[0.14em] text-faint">
                     출처 {f.source.agency ?? ''} · 기준 {f.source.revisedAt}
                   </span>
                   {f.source.note}
@@ -251,7 +251,7 @@ function Row({
 }) {
   return (
     <div className="grid gap-1 sm:grid-cols-[88px_1fr] sm:gap-4">
-      <dt className="font-mono text-[0.72rem] tracking-[0.1em] text-faint sm:pt-[0.15rem]">
+      <dt className="font-mono text-[0.78rem] tracking-[0.1em] text-faint sm:pt-[0.15rem]">
         {label}
       </dt>
       <dd className="m-0 text-muted">{children}</dd>

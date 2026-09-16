@@ -227,7 +227,7 @@ export default function ResultPage() {
       {/* AI 설명문. 없어도 이 화면은 완전히 동작한다 */}
       {writing && !explanation && (
         <div className="mt-7 flex flex-col gap-2 rounded-xl border-l-[3px] border-border bg-surface px-5 py-4">
-          <span className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+          <span className="font-mono text-[0.78rem] tracking-[0.14em] text-faint">
             읽기 쉬운 설명을 쓰는 중
           </span>
           <span className="h-3 w-[85%] animate-pulse rounded-md bg-border-soft" />
@@ -264,7 +264,11 @@ export default function ResultPage() {
       )}
 
       {outOfScope.length > 0 && (
-        <OutOfScope matches={outOfScope} context={context} />
+        <OutOfScope
+          matches={outOfScope}
+          total={facilitySummary.outOfScope}
+          context={context}
+        />
       )}
 
       {facilities.length === 0 && <NoFacilities />}
@@ -563,9 +567,13 @@ const OUT_OF_SCOPE_LIMIT = 20;
 
 function OutOfScope({
   matches,
+  total,
   context,
 }: {
+  /** 응답에 담겨 온 것. 백엔드가 20곳까지만 보낸다 */
   matches: FacilityMatch[];
+  /** 실제 관할 밖 전체 건수 (요약에서 온다) */
+  total: number;
   context: Parameters<typeof FacilityCard>[0]['context'];
 }) {
   const [open, setOpen] = useState(false);
@@ -581,9 +589,7 @@ function OutOfScope({
         <span className="text-[1.02rem] font-semibold text-muted">
           관할 지역이 아닌 곳
         </span>
-        <span className="font-mono text-[0.8rem] text-faint">
-          {matches.length}곳
-        </span>
+        <span className="font-mono text-[0.8rem] text-faint">{total}곳</span>
         <span className="ml-auto text-[0.84rem] text-brand">
           {open ? '접기' : '펼쳐 보기'}
         </span>
@@ -601,10 +607,10 @@ function OutOfScope({
               />
             ))}
           </div>
-          {matches.length > OUT_OF_SCOPE_LIMIT && (
+          {total > Math.min(matches.length, OUT_OF_SCOPE_LIMIT) && (
             <p className="mt-3 text-[0.86rem] text-faint">
-              그 외 {matches.length - OUT_OF_SCOPE_LIMIT}곳은 다른 지역의 기관이라 목록에서
-              생략했습니다.
+              그 외 {total - Math.min(matches.length, OUT_OF_SCOPE_LIMIT)}곳은 다른 지역의
+              기관이라 목록에 넣지 않았습니다.
             </p>
           )}
         </>
@@ -686,7 +692,7 @@ function ProgramGroup({
 function NoResult() {
   return (
     <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-5 py-24">
-      <p className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+      <p className="font-mono text-[0.78rem] tracking-[0.14em] text-faint">
         세션 없음
       </p>
       <h1 className="text-[1.6rem] leading-snug font-semibold tracking-[-0.02em]">

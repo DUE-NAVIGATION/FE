@@ -48,7 +48,7 @@ export default function EvidenceTable({
                 <th
                   key={h}
                   scope="col"
-                  className="border-b border-border bg-card px-5 py-3 text-left font-mono text-[0.68rem] font-medium tracking-[0.1em] whitespace-nowrap text-faint"
+                  className="border-b border-border bg-card px-5 py-3 text-left font-mono text-[0.78rem] font-medium tracking-[0.1em] whitespace-nowrap text-faint"
                 >
                   {h}
                 </th>

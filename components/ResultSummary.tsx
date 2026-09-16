@@ -27,7 +27,7 @@ export default function ResultSummary({
 
   return (
     <section className="flex flex-col gap-2">
-      <p className="font-mono text-[0.68rem] tracking-[0.14em] text-faint">
+      <p className="font-mono text-[0.78rem] tracking-[0.14em] text-faint">
         확인된 조건 기준 · 연간 합계
       </p>
 
